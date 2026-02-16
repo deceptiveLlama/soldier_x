@@ -63,7 +63,7 @@ subroutine buy_ignore_pain
 subroutine buy_bandage
 subroutine buy_pyromaniac
 subroutine buy_poison_vials
-subroutine buy_crazy_alchemist
+subroutine buy_alchemist
 subroutine buy_bombardment
 subroutine buy_gigachad
 subroutine buy_gunslinger
@@ -564,7 +564,7 @@ def buy_or_upgrade_talent():
             eventPlayer.amount_of_potions_or_vials = 3
         buy_poison_vials()
     elif eventPlayer.current_talent_replace_or_buy == 26:
-        buy_crazy_alchemist()
+        buy_alchemist()
     elif eventPlayer.current_talent_replace_or_buy == 27:
         buy_bombardment()
     elif eventPlayer.current_talent_replace_or_buy == 28:
@@ -613,9 +613,10 @@ def buy_cybernetics():
         removeHealthPool(eventPlayer.health_pool_id_or_hot_id[7])
         return
     if eventPlayer.talent_ranks[Talent.CYBERNETICS] == 1:
+        eventPlayer.stats[4] = 56.25
         eventPlayer.talents_you_do_not_have.remove(Talent.CYBERNETICS)
     #Shields
-    eventPlayer.stats[4] += 30
+    eventPlayer.stats[4] += 18.75
 
 def buy_soul_harvest():
     @Name "TALENT SYSTEM - - - [TALENT 3: SOUL_HARVEST] [SUBROUTINE] Buy Soul Harvest"
@@ -830,9 +831,9 @@ def buy_health_potions():
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
         if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == [26]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.HEALTH_POTIONS], talent_names[Talent.CRAZY_ALCHEMIST]))
+            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.HEALTH_POTIONS], talent_names[Talent.ALCHEMIST]))
             goto lbl_0
-        if eventPlayer.talent_ranks[Talent.CRAZY_ALCHEMIST] > 0:
+        if eventPlayer.talent_ranks[Talent.ALCHEMIST] > 0:
             smallMessage(eventPlayer, "Need to remove {0} Crazy Alchemist first!".format(iconString(Icon.RADIOACTIVE)))
             lbl_0:
             eventPlayer.replacing_talent_cancelled = true
@@ -841,7 +842,7 @@ def buy_health_potions():
         eventPlayer.talents_you_do_not_have.append(Talent.HEALTH_POTIONS)
         #disabled because poison vials are disabled
         /*eventPlayer.talents_you_do_not_have.append(Talent.POISON_VIALS)*/
-        eventPlayer.talents_you_do_not_have.remove(Talent.CRAZY_ALCHEMIST)
+        eventPlayer.talents_you_do_not_have.remove(Talent.ALCHEMIST)
         return
     if eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] == 1:
         eventPlayer.talent_trigger_times[Talent.HEALTH_POTIONS] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.HEALTH_POTIONS]
@@ -849,9 +850,9 @@ def buy_health_potions():
         eventPlayer.possible_talents.remove(25)
         eventPlayer.talents_you_do_not_have.remove(Talent.POISON_VIALS)
         eventPlayer.talents_you_do_not_have.remove(Talent.HEALTH_POTIONS)
-        eventPlayer.talents_you_do_not_have.append(Talent.CRAZY_ALCHEMIST)
+        eventPlayer.talents_you_do_not_have.append(Talent.ALCHEMIST)
         if len(eventPlayer.bought_talents) < 5:
-            eventPlayer.possible_talents.append(Talent.CRAZY_ALCHEMIST)
+            eventPlayer.possible_talents.append(Talent.ALCHEMIST)
 
 def buy_ignite():
     @Name "TALENT SYSTEM - - - [TALENT 16: IGNITE] [SUBROUTINE] Buy Ignite"
@@ -1007,10 +1008,10 @@ def buy_poison_vials():
     @Name "TALENT SYSTEM - - - [TALENT 31: POISON VIALS] [SUBROUTINE] Buy Poison Vials [DISABLED: POISON VIALS NOT WORKING AS INTENDED]"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == talent_names[Talent.CRAZY_ALCHEMIST]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.POISON_VIALS], talent_names[Talent.CRAZY_ALCHEMIST]))
+        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == talent_names[Talent.ALCHEMIST]:
+            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.POISON_VIALS], talent_names[Talent.ALCHEMIST]))
             goto lbl_0
-        if eventPlayer.talent_ranks[Talent.CRAZY_ALCHEMIST] > 0:
+        if eventPlayer.talent_ranks[Talent.ALCHEMIST] > 0:
             smallMessage(eventPlayer, "Need to remove {0} Crazy Alchemist first!".format(iconString(Icon.RADIOACTIVE)))
             lbl_0:
             eventPlayer.replacing_talent_cancelled = true
@@ -1022,29 +1023,29 @@ def buy_poison_vials():
         eventPlayer.amount_of_potions_or_vials = 0
         eventPlayer.talents_you_do_not_have.append(Talent.HEALTH_POTIONS)
         eventPlayer.talents_you_do_not_have.append(Talent.POISON_VIALS)
-        eventPlayer.talents_you_do_not_have.remove(Talent.CRAZY_ALCHEMIST)
+        eventPlayer.talents_you_do_not_have.remove(Talent.ALCHEMIST)
         return
     if eventPlayer.talent_ranks[Talent.POISON_VIALS] == 1:
         eventPlayer.talent_trigger_times[Talent.POISON_VIALS] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.POISON_VIALS]
         eventPlayer.talents_you_do_not_have.remove(Talent.HEALTH_POTIONS)
         eventPlayer.talents_you_do_not_have.remove(Talent.POISON_VIALS)
-        eventPlayer.talents_you_do_not_have.append(Talent.CRAZY_ALCHEMIST)
+        eventPlayer.talents_you_do_not_have.append(Talent.ALCHEMIST)
         eventPlayer.amount_of_potions_or_vials = 3
         eventPlayer.possible_talents.remove(14)
         if len(eventPlayer.bought_talents) < 5:
-            eventPlayer.possible_talents.append(Talent.CRAZY_ALCHEMIST)
+            eventPlayer.possible_talents.append(Talent.ALCHEMIST)
         eventPlayer.poison_vial_effects = []
         eventPlayer.poison_vial_clouds_spawned = 0
         chase(eventPlayer.time_since_poison_vial_exploded, 0, rate=1, ChaseReeval.DESTINATION_AND_RATE)
 
-def buy_crazy_alchemist():
+def buy_alchemist():
     @Name "TALENT SYSTEM - - - [TALENT 32: CRAZY ALCHEMIST] [SUBROUTINE] Buy Crazy Alchemist"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        eventPlayer.talents_you_do_not_have.append(Talent.CRAZY_ALCHEMIST)
+        eventPlayer.talents_you_do_not_have.append(Talent.ALCHEMIST)
         return
-    if eventPlayer.talent_ranks[Talent.CRAZY_ALCHEMIST] == 1:
-        eventPlayer.talents_you_do_not_have.remove(Talent.CRAZY_ALCHEMIST)
+    if eventPlayer.talent_ranks[Talent.ALCHEMIST] == 1:
+        eventPlayer.talents_you_do_not_have.remove(Talent.ALCHEMIST)
 
 def buy_bombardment():
     @Name "TALENT SYSTEM - - - [BOMBARDMENT] [SUBROUTINE] Buy Bombardment"
@@ -1069,11 +1070,12 @@ def buy_gigachad():
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
         eventPlayer.talents_you_do_not_have.append(Talent.GIGACHAD)
-        eventPlayer.talents_you_do_not_have.append(Talent.SPRINTER)
+        if eventPlayer.talent_ranks[Talent.IGNORE_PAIN] == 0:
+            eventPlayer.talents_you_do_not_have.append(Talent.SPRINTER)
         #Health
         eventPlayer.stats[1] = 200
         #Speed
-        eventPlayer.stats[2] = 100
+        #eventPlayer.stats[2] = 100
         #Size
         eventPlayer.stats[8] = 1
         #Knockback Received
@@ -1087,9 +1089,9 @@ def buy_gigachad():
         eventPlayer.talents_you_do_not_have.remove(Talent.GIGACHAD)
         eventPlayer.talents_you_do_not_have.remove(Talent.SPRINTER)
     #Health
-    eventPlayer.stats[1] += 50
+    eventPlayer.stats[1] += 40
     #Speed
-    eventPlayer.stats[2] -= 3.5
+    #eventPlayer.stats[2] -= 2
     #Size
     eventPlayer.stats[8] += 0.07
     eventPlayer.startScalingSize(eventPlayer.stats[8], false)

@@ -27,8 +27,8 @@ rule "BOT SYSTEM - - - Bot INIT":
     eventPlayer.reaper_turn_speed = 200
     #eventPlayer.setMaxHealth(200)
     #eventPlayer.setMaxHealth(1000)
-    #Damage, Health, Speed, Armor, Shields, Size
-    eventPlayer.stats = [100, 166.666, 75, 0, 0, 1, 1]
+    #[0] = Damage, [1] = Health, [2] = Speed, [3] = Armor, [4] = Shields, [5] = XP, [6] = Voice, [7] = Berserker Helper, [8] = Size, [9] = Knockback Resist
+    eventPlayer.stats = [100, 166.666, 75, 0, 0, 1, 1, 0, 1, 100]
     #[0] = Current Target, [1] = Searching For Target, [2] = Using Teleport Ability, [3] = Is Pathfinding, [4] = Is Changing Direction
     eventPlayer.reaper_brain_information = [null, false, false, false, false]
     eventPlayer.reaper_aggro_list = []
@@ -194,7 +194,7 @@ rule "BOT SYSTEM - - - Bot Died":
     @Hero reaper
     @Condition spawn_bots == true
     
-    eventPlayer.setGravity(100)
+    #eventPlayer.setGravity(100)
     eventPlayer.reaper_brain_information[0] = null
     eventPlayer.reaper_aggro_list = []
     eventPlayer.stopFacing()
@@ -202,7 +202,7 @@ rule "BOT SYSTEM - - - Bot Died":
     eventPlayer.stopThrottleInDirection()
     eventPlayer.reaper_brain_information[3] = false
     waitUntil(eventPlayer.isAlive() and eventPlayer.hasSpawned(), 99999)
-    eventPlayer.setGravity(50)
+    #eventPlayer.setGravity(50)
 
 
 rule "BOT SYSTEM - - - Bot Use Teleport":
@@ -210,6 +210,9 @@ rule "BOT SYSTEM - - - Bot Use Teleport":
     @Hero reaper
     @Condition spawn_bots == true
     @Condition eventPlayer.reaper_brain_information[0].getCurrentHero() == Hero.SOLDIER
+    @Condition eventPlayer.talent_counter_or_position_etc[7] == 0
+    @Condition eventPlayer.hit_by_talent[Talent.DIVE_BOMB] == null
+    @Condition distance(eventPlayer.getPosition(), eventPlayer.reaper_brain_information[0].getPosition()) >= 5
     @Condition (eventPlayer.getVerticalFacingAngle() + 89 < 59 and eventPlayer.reaper_brain_information[0].isOnGround() or eventPlayer.reaper_brain_information[1] == true and eventPlayer.getVerticalFacingAngle() + 89 < 59 or eventPlayer.reaper_brain_information[0].getCurrentHero() == Hero.SOLDIER and distance(eventPlayer.getPosition(), eventPlayer.reaper_brain_information[0].getPosition()) >= 35) == true
     
     eventPlayer.reaper_brain_information[2] = true

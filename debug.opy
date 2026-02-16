@@ -30,7 +30,7 @@ rule "DEBUG - - - Hold Reload For XP [DEFAULT: OFF]":
     wait(0.02)
     if RULE_CONDITION:
         goto RULE_START
-#*/
+
 /*
 rule "DEBUG - - - Activate Admin Rights [DEFAULT: OFF]":
     @Event eachPlayer
@@ -158,13 +158,44 @@ def buy_debug_talents():
         buy_juggernaut()
         eventPlayer.talent_ranks[Talent.JUGGERNAUT] = debug_juggernaut
         eventPlayer.amount_of_talents_purchased += debug_juggernaut
-*/
+    if debug_fireball > 0:
+        eventPlayer.talent_ranks[Talent.FIREBALL] = 1
+        eventPlayer.bought_talents.append(Talent.FIREBALL)
+        buy_fireball()
+        eventPlayer.talent_ranks[Talent.FIREBALL] = debug_fireball
+        eventPlayer.amount_of_talents_purchased += debug_fireball
+    if debug_predator > 0:
+        eventPlayer.talent_ranks[Talent.PREDATOR] = 1
+        eventPlayer.bought_talents.append(Talent.PREDATOR)
+        buy_predator()
+        eventPlayer.talent_ranks[Talent.PREDATOR] = debug_predator
+        eventPlayer.amount_of_talents_purchased += debug_predator
+    if debug_gigachad > 0:
+        eventPlayer.talent_ranks[Talent.GIGACHAD] = 1
+        eventPlayer.bought_talents.append(Talent.GIGACHAD)
+        buy_gigachad()
+        eventPlayer.talent_ranks[Talent.GIGACHAD] = debug_gigachad
+        eventPlayer.amount_of_talents_purchased += debug_gigachad
+    if debug_stealth > 0:
+        eventPlayer.talent_ranks[Talent.STEALTH] = 1
+        eventPlayer.bought_talents.append(Talent.STEALTH)
+        buy_stealth()
+        eventPlayer.talent_ranks[Talent.STEALTH] = debug_stealth
+        eventPlayer.amount_of_talents_purchased += debug_stealth
+    if debug_poisonous_dagger > 0:
+        eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] = 1
+        eventPlayer.bought_talents.append(Talent.POISONOUS_DAGGER)
+        buy_poisonous_dagger()
+        eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] = debug_poisonous_dagger
+        eventPlayer.amount_of_talents_purchased += debug_poisonous_dagger
+    
+#*/
 
 /*
 def lifesteal_hps():
     @Name "DEBUG - - - [Talent: Lifesteal] Healing Done In Combat [DEFAULT: OFF]"
     
-    eventPlayer.healing_done_in_combat[12] += eventDamage * (0.112 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.038)
+    eventPlayer.healing_done_in_combat[12] += LIFESTEAL_HEAL
 */
 
 /*
