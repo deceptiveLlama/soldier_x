@@ -1,62 +1,120 @@
 #!mainFile "soldier_x.opy"
-rule "XP SYSTEM - - - Level 0 or 25? Activate XP Boost":
-    @Event eachPlayer
-    @Hero soldier
-    @Condition (eventPlayer.amount_of_talents_purchased == 0 or eventPlayer.amount_of_talents_purchased == 25) == true
-    @Condition eventPlayer.hasSpawned() == true
-    @Condition eventPlayer.isAlive() == true
+
+subroutine activate_xp_boost
+globalvar debug_loop_count
+globalvar xp_orb_to_remove_selector
+
+rule "XP SYSTEM - - - XP Orbs":
+    @Condition len(xp_orbs) > 0 == true
+
+    #debug_loop_count = 0
+        while len(xp_orbs) > 7:
+            #xp_orbs_current_index = 0
+            xp_orbs_current_index = xp_orbs.index(sorted(xp_orbs, lambda orb: orb[Orb.TIMESTAMP])[0])
+            #xp_orbs_current_index = sorted(xp_orbs)[Orb.TIMESTAMP].index(xp_orbs[0])
+            #xp_orbs_current_index = sorted(xp_orbs).index
+            #xp_orbs_current_index = sorted(xp_orbs, lambda current: xp_orbs[current][Orb.TIMESTAMP])[0]
+            #xp_orb_to_remove_selector = sorted(xp_orbs, lambda current: xp_orbs[current][Orb.TIMESTAMP])[0]
+            #for xp_orb_to_remove_selector in range(0, len(xp_orbs), 1):
+                #if xp_orbs[xp_orb_to_remove_selector][Orb.TIMESTAMP] < xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP]:
+                    #xp_orbs_current_index = xp_orb_to_remove_selector
+            destroyEffect(xp_orbs[xp_orbs_current_index][Orb.ORB_EFFECT_ID])
+            destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
+            destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
+            del xp_orbs[xp_orbs_current_index]
+            wait()
     
+        for xp_orbs_current_index in range(0, len(xp_orbs), 1):
+
+            #debug_loop_count += 1
+
+            #any players within current xp orb?
+            if [player for player in getRealPlayersInRadius(xp_orbs[xp_orbs_current_index][Orb.POSITION], 2, Team.ALL, LosCheck.SURFACES) if player.getHero() == Hero.SOLDIER and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] > 0:
+
+                #if there is, who is closest?
+                player_picking_up_orb = [player for player in getRealClosestPlayer(xp_orbs[xp_orbs_current_index][Orb.POSITION], Team.ALL) if player.getHero() == Hero.SOLDIER and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] 
+                
+                #destroy created effect and play pick up effects
+                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.ORB_EFFECT_ID])
+                playEffect(getAllPlayers(), DynamicEffect.BUFF_IMPACT_SOUND, Color.WHITE, player_picking_up_orb, 75)
+                playEffect(getAllPlayers(), DynamicEffect.GOOD_PICKUP_EFFECT, xp_orbs[xp_orbs_current_index][Orb.COLOR], xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
+
+                #award xp
+                if player_picking_up_orb.experience_current < player_picking_up_orb.experience_max:
+
+                    player_picking_up_orb.xp_received_message = xp_orbs[xp_orbs_current_index][Orb.XP_AMOUNT]
+                    smallMessage(player_picking_up_orb, "{0} +{1} XP!".format('<TXC0000000004C5D2>', player_picking_up_orb.xp_received_message))
+
+                    player_picking_up_orb.experience_current += xp_orbs[xp_orbs_current_index][Orb.XP_AMOUNT] * player_picking_up_orb.stats[Stat.XP]
+
+                else:
+
+                    smallMessage(player_picking_up_orb, "{0} XP Full!".format(iconString(Icon.WARNING)))
+
+                #if the picked up orb is explosive:
+                if xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] >= getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
+
+                    #apply impulse
+                    player_picking_up_orb.applyImpulse(directionTowards(xp_orbs[xp_orbs_current_index][Orb.POSITION], player_picking_up_orb.getEyePosition()), 12.5 * (player_picking_up_orb.stats[Stat.KNOCKBACK_RECEIVED] / 100), Relativity.TO_WORLD, Impulse.CANCEL_CONTRARY_MOTION_XYZ)
+
+                    #wait to see knockback effect before getting killed
+                    wait()
+
+                    #damage
+                    damage(player_picking_up_orb, xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER], BURNING_SOUL_ORB_DAMAGE)
+                
+                    xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] = false
+                    destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])    
+                    destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
+                    playEffect(getAllPlayers(), DynamicEffect.DVA_MICRO_MISSILES_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
+                    playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_MINEFIELD_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
+
+                #if the player has alchemist:
+                if player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] > 0 and player_picking_up_orb.amount_of_health_potions < 3 and ALCHEMIST_PROC_CHANCE >= 66:
+                    if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0:
+                        player_picking_up_orb.health_potion_cooldown_memory = player_picking_up_orb.totalTimeElapsed - player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS]
+                        player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.HEALTH_POTIONS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
+                    #elif player_picking_up_orb.talent_ranks[Talent.POISON_VIALS] > 0:
+                        #player_picking_up_orb.health_potion_cooldown_memory = player_picking_up_orb.totalTimeElapsed - player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS]
+                        #player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.POISON_VIALS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
+                    wait()
+                    smallMessage(player_picking_up_orb, "{0} +1 {1}".format(iconString(Icon.RADIOACTIVE), "Health Potion!" if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0 else "Poison Vial!"))
+
+                #if the player has soul harvest:
+                if player_picking_up_orb.talent_ranks[Talent.SOUL_HARVEST] > 0:
+                    heal(player_picking_up_orb, player_picking_up_orb, SOUL_HARVEST_HEALING)
+                    playEffect(getAllPlayers(), DynamicEffect.BRIGITTE_REPAIR_PACK_IMPACT_SOUND, Color.WHITE, player_picking_up_orb.getPosition(), 100)
+                    
+                #if the player has shadowstep:
+                if player_picking_up_orb.talent_ranks[Talent.SHADOWSTEP] > 0:
+                    player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.SHADOWSTEP]
+                
+                #remove from array by index
+                del xp_orbs[xp_orbs_current_index]
+                if RULE_CONDITION:
+                    goto RULE_START
+            
+            #explosive duration expired?
+            elif xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] < getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
+                #print("removed explosive property")
+                xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] = false
+                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])    
+                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
+                playEffect(getAllPlayers(), DynamicEffect.DVA_MICRO_MISSILES_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
+                playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_MINEFIELD_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
+                
+            wait(0.12 / len(xp_orbs))
+        if RULE_CONDITION:
+            goto RULE_START
+
+def activate_xp_boost():
+    @Name "XP SYSTEM - - - [SUBROUTINE] Activate XP Boost"
+
     eventPlayer.xp_boost_is_active = true
-    if eventPlayer.amount_of_talents_purchased == 0:
-        if eventPlayer.spawning_for_the_first_time == true:
-            if debugging == true:
-                buy_debug_talents()
-            eventPlayer.totalTimeElapsed = 0
-            chase(eventPlayer.totalTimeElapsed, 99999, rate=1, ChaseReeval.DESTINATION_AND_RATE)
-            #if eventPlayer.amount_of_talents_purchased < leading_player_talents_purchased and eventPlayer.amount_of_talents_purchased < 5:
-            #eventPlayer.xp_boost_is_active = false
-            #eventPlayer.amount_of_bonus_talents = leading_player_talents_purchased if leading_player_talents_purchased <= 5 else 5
-            #async(late_to_the_party, AsyncBehavior.NOOP)
-            #return
-            #__end__()
-        if eventPlayer.spawning_for_the_first_time == true:
-            eventPlayer.spawning_for_the_first_time = false
-        return
-    waitUntil(eventPlayer.amount_of_talents_purchased < 25, 99999)
-    eventPlayer.xp_boost_is_active = false
-
-rule "XP SYSTEM - - - Too Far Behind? Activate XP Boost":
-    @Event eachPlayer
-    @Hero soldier
-    @Condition eventPlayer.amount_of_talents_purchased <= sorted(getAllPlayers(), lambda player: player.getScore()).last().amount_of_talents_purchased - 5
-    @Condition eventPlayer.amount_of_talents_purchased > 0
-    
-    eventPlayer.xp_boost_is_active = true
-
-
-rule "XP SYSTEM - - - XP Boost Activated":
-    @Event eachPlayer
-    @Hero soldier
-    @Condition eventPlayer.xp_boost_is_active == true
-    @Condition eventPlayer.browsing_shop == false
-    @Condition eventPlayer.hasSpawned() == true
-    @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.can_enter_shop == false
-    @Condition eventPlayer.experience_current < eventPlayer.experience_max
-    
     chase(eventPlayer.experience_current, eventPlayer.experience_max, rate=eventPlayer.experience_max / 60, ChaseReeval.DESTINATION_AND_RATE)
-
-
-rule "XP SYSTEM - - - Deactivate XP Boost":
-    @Event eachPlayer
-    @Hero soldier
-    @Condition eventPlayer.amount_of_talents_purchased > 0
-    @Condition eventPlayer.skipped_a_talent == false
-    @Condition eventPlayer.amount_of_talents_purchased > sorted(getAllPlayers(), lambda player: player.getScore()).last().amount_of_talents_purchased - 5
-    
+    waitUntil(eventPlayer.skipped_a_talent == false and eventPlayer.amount_of_talents_purchased > 0 and eventPlayer.amount_of_talents_purchased < 25 and eventPlayer.amount_of_talents_purchased > (player_with_most_talents.amount_of_talents_purchased - 5), 99999)
     eventPlayer.xp_boost_is_active = false
     stopChasingVariable(eventPlayer.experience_current)
-
 
 rule "XP SYSTEM - - - Level Up":
     @Event eachPlayer
@@ -66,12 +124,14 @@ rule "XP SYSTEM - - - Level Up":
     eventPlayer.can_enter_shop = true
     playEffect(getAllPlayers(), DynamicEffect.BUFF_EXPLOSION_SOUND, Color.WHITE, eventPlayer, 100)
     if eventPlayer.amount_of_talents_purchased < 25:
-        bigMessage(eventPlayer, "{0} Level Up!".format(abilityIconString(Hero.GENJI, Button.JUMP)))
-
+        bigMessage(eventPlayer, "{0} Level Up!".format(('<TX00000004C5D2>')))
 
 rule "XP SYSTEM - - - Earned Elimination":
     @Event playerEarnedElimination
     @Hero soldier
     
     if eventPlayer.experience_current < eventPlayer.experience_max:
-        eventPlayer.experience_current += victim.experience_max * 0.075 * eventPlayer.stats[5]
+        eventPlayer.experience_current += victim.experience_max * 0.075 * eventPlayer.stats[Stat.XP]
+    #if eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] > 0 and attacker != victim:
+        #eventPlayer.adrenaline_rush_value = ADRENALINE_RUSH_MAX_SPEED
+        
