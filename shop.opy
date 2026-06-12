@@ -1,17 +1,31 @@
 #!mainFile "soldier_x.opy"
+
+#--- Shop-only defineMember (variable[200-217]) ---
+#!defineMember jetpack_sound_id variable[200]
+#!defineMember ignore_pain_effect_id variable[201]
+#!defineMember ignore_pain_sound_id variable[202]
+#!defineMember lifesteal_sound_id variable[203]
+#!defineMember lifesteal_target_effect_id variable[204]
+#!defineMember lifesteal_self_effect_id variable[205]
+#!defineMember health_regen_sound_id variable[206]
+#!defineMember health_regen_effect_id variable[207]
+#!defineMember burning_soul_particle_effect_id variable[208]
+#!defineMember burning_soul_material_effect_id variable[209]
+#!defineMember berserker_team1_effect_id variable[210]
+#!defineMember berserker_team2_effect_id variable[211]
+#!defineMember berserker_sound_id variable[212]
+#!defineMember railgun_charge_sound variable[213]
+#!defineMember adrenaline_rush_effect_id variable[214]
+#!defineMember adrenaline_rush_effect_id2 variable[215]
+#!defineMember adrenaline_rush_effect_id3 variable[216]
+#!defineMember jetpack_beam_effect_id variable[217]
+
 #Global variables
 
-globalvar shop_location
-globalvar shop_talent_positions
-globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 536, 589, 648, 713, 785, 863, 949, 1044, 1149, 1264, 1390, 1529, 1682, 1850, 2035, 2239, 2462, 2709]
-
 #Player variables
-
-playervar talent_trigger_times
 playervar health_pool_id_or_hot_id
 playervar entering_stealth
 playervar railgun_discharge
-playervar railgun_charge
 playervar railgun_projectile_start
 playervar railgun_projectile_player_hit
 playervar jetpack_fuel = 100
@@ -69,7 +83,7 @@ subroutine buy_gigachad
 
 rule "SHOP - - - Using Hearthstone":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.can_enter_shop == true
     #@Condition eventPlayer.using_one_of_the_hearthstones == false
@@ -88,7 +102,7 @@ rule "SHOP - - - Using Hearthstone":
 
 rule "SHOP - - - Skip Talents & Exit Shop":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.replacing_talent_show_confirmation == false
     @Condition eventPlayer.replacing_talent_show_bought_talents == false
@@ -101,7 +115,7 @@ rule "SHOP - - - Skip Talents & Exit Shop":
 
 rule "SHOP - - - Using Yes":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.replacing_talent_show_confirmation == true
     @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == true
@@ -113,7 +127,7 @@ rule "SHOP - - - Using Yes":
 
 rule "SHOP - - - Using No":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.replacing_talent_show_confirmation == true
     @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == false
@@ -297,7 +311,7 @@ def open_shop():
 
 rule "SHOP - - - Shop Left":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == true
     @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == false
@@ -328,7 +342,7 @@ rule "SHOP - - - Shop Left":
 
 rule "SHOP - - - Shop Right":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == true
     @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == false
@@ -358,7 +372,7 @@ rule "SHOP - - - Shop Right":
 
 rule "SHOP - - - Buy Talent":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.using_one_of_the_hearthstones == false
     @Condition eventPlayer.replacing_talent_show_confirmation == false
@@ -454,7 +468,7 @@ def update_player_with_most_talent():
 
     #If (start of the game, or the leading player have left the match) or eventplayer has less than leading player, update who in the lobby has most
     if (player_with_most_talents.amount_of_talents_purchased == null) or (eventPlayer.amount_of_talents_purchased > player_with_most_talents.amount_of_talents_purchased):
-        player_with_most_talents = sorted(getPlayersOnHero(Hero.SOLDIER, Team.ALL), lambda player: player.amount_of_talents_purchased).last()
+        player_with_most_talents = sorted([p for p in getAllPlayers() if not p.isDummy()], lambda player: player.amount_of_talents_purchased).last()
 
 def replace_talent():
     @Name "SHOP - - - [SUBROUTINE] Replace Talent"
@@ -466,7 +480,7 @@ def replace_talent():
 
 rule "SHOP - - - Reset Shop Camera":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.isHoldingButton(Button.INTERACT) == false
     @Condition (eventPlayer.is_using_skip_talent == true or not eventPlayer.isHoldingButton(Button.INTERACT)) == true
@@ -795,7 +809,7 @@ def buy_health_regen():
         createEffect(eventPlayer if eventPlayer.getHealthOfType(Health.NORMAL) < eventPlayer.getMaxHealthOfType(Health.NORMAL) and eventPlayer.isAlive() else null, Effect.SPARKLES, Color.PURPLE if eventPlayer.is_using_ability[Talent.STEALTH] == true else Color.ORANGE, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
         eventPlayer.player_temp_effects[64] = getLastCreatedEntity()
         eventPlayer.talents_you_do_not_have.remove(Talent.HEALTH_REGEN)
-        async(health_regen_heal_over_time, AsyncBehavior.RESTART)
+        async(health_regen_heal_over_time, AsyncBehavior.NOOP)
 
 def buy_health_potions():
     @Name "TALENT SYSTEM - - - [TALENT 14: HEALTH POTIONS] [SUBROUTINE] Buy Health Potions"
@@ -1072,7 +1086,7 @@ def buy_gigachad():
     eventPlayer.stats[Stat.VOICE] -= 0.05
     eventPlayer.startModifyingVoicelinePitch(eventPlayer.stats[Stat.VOICE], false)
     #Knockback Received
-    eventPlayer.stats[Stat.KNOCKBACK_RECEIVED] -= 20
+    #eventPlayer.stats[Stat.KNOCKBACK_RECEIVED] -= 20
 
 /*    
 def buy_gunslinger():

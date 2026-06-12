@@ -1,17 +1,26 @@
-#!define TOP_RIGHT_TEXT "Soldier: X [v3.2.1] - Made By Psyrius#21775 - Workshop Code: ZEKK3", "[Discord In Description]"
-#!define GAME_MODE_DESCRIPTION "● Made by Psyrius\n● Code: ZEKK3\n● v3.2.1\n● RPG, Level up, Buy talents, FFA, Deathmatch\n● Developed since 2020\n● Discord: discord.gg/3MBymdF"
-#!define GAME_MODE_NAME "SOLDIER: X [v3.2.1]"
+#!define TOP_RIGHT_TEXT "Soldier: X [v3.2.2] - Made By Psyrius#21775 - Workshop.codes/Zekk3", "[Discord: dsc.gg/soldier-x]"
+#!define GAME_MODE_DESCRIPTION "● Made by Psyrius\n● Code: ZEKK3\n● v3.2.2\n● RPG, Level up, Buy talents, FFA, Deathmatch\n● Developed since 2020\n● Discord: discord.gg/3MBymdF"
+#!define GAME_MODE_NAME "SOLDIER: X [v3.2.2]"
 
 #!setupTags
 #!include "declarations.opy"
 #!include "shop.opy"
-#!include "debug - release.opy"
-#!include "debug - development.opy"
 #!include "settings.opy"
-#!include "bots.opy"
-#!include "bots - pathfinding.opy"
+#!include "bots - new system.opy"
+#!include "debug - release.opy"
+##!include "debug - development.opy"
 #!include "xp.opy"
 #!include "talents.opy"
+
+#--- Soldier_x-only defineMember (variable[400-402]) ---
+#!defineMember grim_reaper_cast_sound_id variable[400]
+#!defineMember grim_reaper_effect_id3 variable[401]
+#!defineMember grim_reaper_effect_id4 variable[402]
+
+#--- Local globalvars (only used in this file) ---
+globalvar init_locked = false
+globalvar init_owner = null
+globalvar antiCrashActivated
 
 rule "Player Left Match":
     @Event playerLeft
@@ -22,7 +31,7 @@ rule "Player Left Match":
         init_locked = false
 
 rule "GENERAL - - - Global Variables":
-    #disableInspector()
+    disableInspector()
 
     /*
     highest_grim_reaper_rank_in_match = 0
@@ -38,8 +47,8 @@ rule "GENERAL - - - Global Variables":
     createInWorldText(localPlayer if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents and is_talent_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] else null, "[Unique]: {0} Can not be learned after learning {1}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) if len(talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) == 1 else "[Unique]: {0} and {1} Can not be learned after learning {2}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]][1]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.5, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
     #Talent Information Expand Mind
     createInWorldText(localPlayer if localPlayer.browsing_shop and talent_information_expand_mind[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] != null and localPlayer.isHoldingButton(Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents else null, "[Expand Mind]: {0} can appear in shop after learning {1}".format(talent_names[talent_information_expand_mind[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.375, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
-    #Hearthstone or Grim Reaper
-    progressBarHud(localPlayer if localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no or (localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success) else null, localPlayer.casting_timer / (2.75 if (localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no) and not faster_testing else GRIM_REAPER_CAST_TIME_LOCAL if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else 0.5 if localPlayer.is_using_hearthstone and faster_testing else 0) * 100, "{0} Casting Hearthstone".format(iconString(Icon.SPIRAL)) if localPlayer.is_using_hearthstone and not localPlayer.browsing_shop else "{0} Casting Grim Reaper".format('<tx0C0000000004F741>') if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else "{0} YES".format(iconString(Icon.CHECKMARK)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.PRIMARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} NO".format(iconString(Icon.NO)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.SECONDARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} Skipping Talents For XP Boost".format(iconString(Icon.TRASHCAN)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.RELOAD) else "", HudPosition.TOP, 2, Color.GREEN if localPlayer.is_using_hearthstone else Color.RED if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else Color.WHITE, Color.WHITE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.NEVER)
+    #Hearthstone, Grim Reaper, Dive Bomb
+    progressBarHud(localPlayer if localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no or (localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success) or localPlayer.is_using_ability[Talent.DIVE_BOMB] else null, localPlayer.casting_timer / (2.75 if (localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no) and not faster_testing else GRIM_REAPER_CAST_TIME_LOCAL if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else 0.5 if localPlayer.is_using_hearthstone and faster_testing else 0) * 100 if not localPlayer.is_using_ability[Talent.DIVE_BOMB] else ((localPlayer.dive_bomb_damage - DIVE_BOMB_DAMAGE_LOCAL) / DIVE_BOMB_DAMAGE_LOCAL) * 100, "{0} Casting Hearthstone".format(iconString(Icon.SPIRAL)) if localPlayer.is_using_hearthstone and not localPlayer.browsing_shop else "{0} Casting Grim Reaper".format('<tx0C0000000004F741>') if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else "{0} YES".format(iconString(Icon.CHECKMARK)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.PRIMARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} NO".format(iconString(Icon.NO)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.SECONDARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} Skipping Talents For XP Boost".format(iconString(Icon.TRASHCAN)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.RELOAD) else "{0} DAMAGE: {1}".format(abilityIconString(Hero.HAMMOND, Button.CROUCH), round(localPlayer.dive_bomb_damage)) if localPlayer.is_using_ability[Talent.DIVE_BOMB] else "", HudPosition.TOP, 2, Color.GREEN if localPlayer.is_using_hearthstone else Color.RED if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else Color.WHITE if localPlayer.is_using_ability[Talent.DIVE_BOMB] else Color.WHITE, Color.WHITE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.NEVER)
 
 rule "GENERAL - - - [EACH PLAYER] INIT":
     @Event eachPlayer
@@ -48,9 +57,13 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
     waitUntil(init_locked == false, 99999)
     init_locked = true
     init_owner = eventPlayer
+    wait()
+    if init_owner != eventPlayer:
+        goto RULE_START
 
     # INIT FOR PLAYERS (NOT BOTS)
     if not eventPlayer.isDummy():
+        eventPlayer.stats[Stat.EYE_HEIGHT] = eventPlayer.getEyePosition().y - eventPlayer.getPosition().y
         /*
         print("total time elapsed: {0}".format(getTotalTimeElapsed()))
 
@@ -125,21 +138,6 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
         eventPlayer.totalTimeElapsed = 0
         eventPlayer.exit_shop_with_fireball = false
 
-    # INIT FOR BOTS (NOT PLAYERS)
-
-    if eventPlayer.isDummy():
-        #eventPlayer.setMaxHealth(eventPlayer.stats[BotStat.HEALTH])
-        eventPlayer.reaper_view_angle = 90
-        eventPlayer.reaper_turn_speed = 200
-        eventPlayer.stats = [100, 166.666, 75, 0, 0, 1, 1, 0, 100]
-        eventPlayer.bot_memory = [null, false, false, false, false]
-        eventPlayer.reaper_aggro_list = []
-        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
-        eventPlayer.reaper_has_respawned_once = false
-        #eventPlayer.reaper_hello_cooldown = 0
-        #chase(eventPlayer.reaper_hello_cooldown, 0, rate=1, ChaseReeval.DESTINATION_AND_RATE)
-        #eventPlayer.startHoT(eventPlayer, 9999, 500)
-    
     # INIT FOR BOTS AND PLAYERS
 
     #eventPlayer.hit_by_talent[Talent.POISON_VIALS] = null
@@ -154,7 +152,7 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
     createEffect(getAllPlayers() if eventPlayer.is_using_ability[Talent.CRYOGENICS] == true else null, Effect.MEI_FROZEN_SOUND, Color.WHITE, eventPlayer, 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
     eventPlayer.cryogenics_travel_time = 0
     async(which_players_have_grim_reaper, AsyncBehavior.RESTART)
-    if damage_text == true:
+    if debug_damage_text == true:
         createInWorldText(null if localPlayer.recentDamageDealtToSlot[eventPlayer.getSlot()] == 0 or localPlayer == eventPlayer else localPlayer, ceil(localPlayer.recentDamageDealtToSlot[eventPlayer.getSlot()]), eventPlayer, 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING)
     wait()
     /*
@@ -226,12 +224,12 @@ rule "GENERAL - - - Match Time":
     
     setMatchTime(0)
     while map_is_changing == false:
-        waitUntil(getNumberOfHeroes(Hero.SOLDIER, Team.ALL) > 0 or accurateTime > 14400, 99999)
+        waitUntil(len([player for player in getAllPlayers() if not player.isDummy()]) > 0, 99999)
         if map_is_changing == true:
             return
         if accurateTime < 10800:
             setMatchTime(3600)
-        waitUntil(getNumberOfHeroes(Hero.SOLDIER, Team.ALL) == 0 or accurateTime > 14400, 14400)
+        waitUntil(len([p for p in getAllPlayers() if not p.isDummy()]) == 0 or accurateTime > 14400, 14400)
         if accurateTime < 10800:
             goto lbl_0
         if accurateTime > 14400 and map_is_changing == false:
@@ -255,7 +253,10 @@ rule "GENERAL - - - Match Time":
 rule "GENERAL - - - Is Match Complete?":
     @Condition isMatchComplete() == true
     
-    bigMessage(getAllPlayers(), "{0} Join the discord! {1}".format(iconString(Icon.ARROW_RIGHT), iconString(Icon.ARROW_LEFT)))
+    bigMessage(getAllPlayers(), "{0} Discord: dsc.gg/soldier-x".format(iconString(Icon.ARROW_RIGHT)))
+
+    wait(2.5)
+    restartMatch()
 
 def If_map():
     @Name "GENERAL - - - [SUBROUTINE] if Map"
@@ -411,7 +412,7 @@ def create_talent_hud_texts():
     @Name "GENERAL - - - [SUBROUTINE] Create HUD Texts"
     
     hudText(getAllPlayers(), null, TOP_RIGHT_TEXT, HudPosition.RIGHT, 0, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
-    hudText(getAllPlayers(), null, "", "[More info: workshop.codes/ZEKK3]", HudPosition.RIGHT, 1, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
+    #hudText(getAllPlayers(), null, "", "[More info: workshop.codes/ZEKK3]", HudPosition.RIGHT, 1, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     hudSubheader(localPlayer if localPlayer.can_enter_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, "[Hold: {0} to use Hearthstone]".format(buttonString(Button.RELOAD)) if localPlayer.browsing_shop == false else "[Hold: {0} to skip a talent, exit shop and get a XP boost]".format(buttonString(Button.RELOAD)) if localPlayer.browsing_shop == true else "", HudPosition.TOP, 2, Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
 
 def create_talent_helpers():
@@ -419,12 +420,12 @@ def create_talent_helpers():
     
     #Health Potions or Poison Vials
     createInWorldText(localPlayer if ((localPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0 or localPlayer.talent_ranks[Talent.POISON_VIALS] > 0) and localPlayer.browsing_shop == false) and localPlayer.is_using_ability[Talent.JUGGERNAUT] == false else null, "{0}   {1}   {2}".format(abilityIconString(Hero.ROADHOG, Button.ABILITY_2) if localPlayer.amount_of_health_potions >= 1 and localPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0 else iconString(Icon.POISON_2) if localPlayer.amount_of_health_potions >= 1 and localPlayer.talent_ranks[Talent.POISON_VIALS] > 0 else "", abilityIconString(Hero.ROADHOG, Button.ABILITY_2) if localPlayer.amount_of_health_potions >= 2 and localPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0 else iconString(Icon.POISON_2) if localPlayer.amount_of_health_potions >= 2 and localPlayer.talent_ranks[Talent.POISON_VIALS] > 0 else "", abilityIconString(Hero.ROADHOG, Button.ABILITY_2) if localPlayer.amount_of_health_potions == 3 and localPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0 else iconString(Icon.POISON_2) if localPlayer.amount_of_health_potions >= 3 and localPlayer.talent_ranks[Talent.POISON_VIALS] > 0 else ""), updateEveryTick(localPlayer.getEyePosition() + (100 * (-0.3 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)) + 3 * localPlayer.getFacingDirection()))), 1.5, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
-    #Purity Field, Bandage, Jetpack, Dive Bomb
-    createProgressBarInWorldText(localPlayer if localPlayer.isAlive() and localPlayer.browsing_shop == false and localPlayer.is_using_ability[Talent.JUGGERNAUT] == false and localPlayer.is_using_ability[Talent.GRIM_REAPER] == false and (localPlayer.is_using_ability[Talent.DIVE_BOMB] == true or localPlayer.purity_field_duration > 0 or localPlayer.bandage_progress > 0 or localPlayer.jetpack_fuel < 100) else null, ((localPlayer.dive_bomb_damage - DIVE_BOMB_DAMAGE_LOCAL) / DIVE_BOMB_DAMAGE_LOCAL) * 100 if localPlayer.is_using_ability[Talent.DIVE_BOMB] == true else localPlayer.purity_field_duration if localPlayer.is_using_ability[Talent.PURITY_FIELD] == true else localPlayer.bandage_progress * 100 / 10 if localPlayer.is_using_ability[Talent.BANDAGE] == true else localPlayer.jetpack_fuel, "{0} DAMAGE: {1}".format(abilityIconString(Hero.HAMMOND, Button.CROUCH), localPlayer.dive_bomb_damage) if localPlayer.is_using_ability[Talent.DIVE_BOMB] == true else "{0} PURITY FIELD".format(abilityIconString(Hero.BAPTISTE, Button.ABILITY_2)) if localPlayer.is_using_ability[Talent.PURITY_FIELD] else "{0} BANDAGING".format(abilityIconString(Hero.KIRIKO, Button.PRIMARY_FIRE)) if localPlayer.is_using_ability[Talent.BANDAGE] else "{0} THRUST".format(abilityIconString(Hero.DVA, Button.ABILITY_1)), updateEveryTick(localPlayer.getEyePosition() + (100 * (-0.625 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)) + 3 * localPlayer.getFacingDirection()))), 0.75, Clip.NONE, Color.WHITE if localPlayer.is_using_ability[Talent.BANDAGE] == true or localPlayer.is_using_ability[Talent.DIVE_BOMB] == true else Color.RED if localPlayer.jetpack_fuel < 33 else Color.ORANGE if localPlayer.jetpack_fuel < 66 else Color.WHITE, Color.WHITE, ProgressWorldTextReeval.VISIBILITY_POSITION_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
+    #Purity Field, Bandage, Jetpack
+    createProgressBarInWorldText(localPlayer if localPlayer.isAlive() and localPlayer.browsing_shop == false and localPlayer.is_using_ability[Talent.JUGGERNAUT] == false and localPlayer.is_using_ability[Talent.GRIM_REAPER] == false and localPlayer.is_using_ability[Talent.DIVE_BOMB] == false and (localPlayer.purity_field_duration > 0 or localPlayer.bandage_progress > 0 or localPlayer.talent_ranks[Talent.JETPACK] > 0 and localPlayer.jetpack_fuel < 100) else null, localPlayer.purity_field_duration if localPlayer.is_using_ability[Talent.PURITY_FIELD] == true else localPlayer.bandage_progress * 100 / 10 if localPlayer.is_using_ability[Talent.BANDAGE] == true else localPlayer.jetpack_fuel, "{0} PURITY FIELD".format(abilityIconString(Hero.BAPTISTE, Button.ABILITY_2)) if localPlayer.is_using_ability[Talent.PURITY_FIELD] else "{0} BANDAGING".format(abilityIconString(Hero.KIRIKO, Button.PRIMARY_FIRE)) if localPlayer.is_using_ability[Talent.BANDAGE] else "{0} THRUST".format(abilityIconString(Hero.DVA, Button.ABILITY_1)), updateEveryTick(localPlayer.getEyePosition() + (100 * (-0.625 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)) + 3 * localPlayer.getFacingDirection()))), 0.75, Clip.NONE, Color.WHITE if localPlayer.is_using_ability[Talent.BANDAGE] == true else Color.RED if localPlayer.jetpack_fuel < 33 else Color.ORANGE if localPlayer.jetpack_fuel < 66 else Color.WHITE, Color.WHITE, ProgressWorldTextReeval.VISIBILITY_POSITION_VALUES_AND_COLOR, SpecVisibility.NEVER)
     #Entering Stealth
     createProgressBarInWorldText(localPlayer if localPlayer.talent_ranks[Talent.STEALTH] > 0 and localPlayer.browsing_shop == false and (localPlayer.entering_stealth == true or localPlayer.is_using_ability[Talent.STEALTH] == true) else null, localPlayer.entering_stealth_timer * 100, "Entering Stealth" if localPlayer.is_using_ability[Talent.STEALTH] == false else "Stealthed", updateEveryTick(localPlayer.getEyePosition() + (100 * (-0.75 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)) + 3 * localPlayer.getFacingDirection()))), 0.75, Clip.NONE, Color.VIOLET if localPlayer.is_using_ability[Talent.STEALTH] == true else Color.WHITE, Color.VIOLET if localPlayer.is_using_ability[Talent.STEALTH] == true else Color.WHITE, ProgressWorldTextReeval.VISIBILITY_POSITION_VALUES_AND_COLOR, SpecVisibility.NEVER)
     #Talent Cooldown Icons
-    createInWorldText(localPlayer if localPlayer.browsing_shop == false and localPlayer.getCurrentHero() == Hero.SOLDIER and not localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.is_using_hearthstone else null, "{0}{1}{2}".format(abilityIconString(Hero.REAPER, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.STEALTH] > 0 and localPlayer.is_using_ability[Talent.STEALTH] == false and localPlayer.talent_trigger_times[Talent.STEALTH] + talent_base_cooldowns[Talent.STEALTH] <= localPlayer.totalTimeElapsed else "", abilityIconString(Hero.REINHARDT, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.JUGGERNAUT] > 0 and localPlayer.talent_trigger_times[Talent.JUGGERNAUT] + talent_base_cooldowns[Talent.JUGGERNAUT] <= localPlayer.totalTimeElapsed else "", "{0}{1}{2}".format(abilityIconString(Hero.HAMMOND, Button.CROUCH) if localPlayer.talent_ranks[Talent.DIVE_BOMB] > 0 and localPlayer.talent_trigger_times[Talent.DIVE_BOMB] + talent_base_cooldowns[Talent.DIVE_BOMB] <= localPlayer.totalTimeElapsed else "", /*abilityIconString(Hero.WIDOWMAKER, Button.ULTIMATE) if localPlayer.talent_ranks[Talent.BLOODTHIRST] > 100 and localPlayer.talent_trigger_times[Talent.GRIM_REAPER] + talent_base_cooldowns[Talent.GRIM_REAPER] <= localPlayer.totalTimeElapsed else */"", "{0}{1}{2}".format(iconString(Icon.SKULL) if localPlayer.talent_ranks[Talent.BERSERKER] > 0 and localPlayer.talent_trigger_times[Talent.BERSERKER] + talent_base_cooldowns[Talent.BERSERKER] <= localPlayer.totalTimeElapsed else "", abilityIconString(Hero.PHARAH, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.FIREBALL] > 0 and localPlayer.talent_trigger_times[Talent.FIREBALL] + talent_base_cooldowns[Talent.FIREBALL] <= localPlayer.totalTimeElapsed else "", "{0}{1}{2}".format(abilityIconString(Hero.MOIRA, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.SHADOWSTEP] > 0 and localPlayer.talent_trigger_times[Talent.SHADOWSTEP] + talent_base_cooldowns[Talent.SHADOWSTEP] - localPlayer.talent_ranks[Talent.SHADOWSTEP] * SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK <= localPlayer.totalTimeElapsed else "", "", "{0}{1}".format(abilityIconString(Hero.BAPTISTE, Button.ABILITY_2) if localPlayer.talent_ranks[Talent.PURITY_FIELD] > 0 and localPlayer.talent_trigger_times[Talent.PURITY_FIELD] + talent_base_cooldowns[Talent.PURITY_FIELD] <= localPlayer.totalTimeElapsed else "", abilityIconString(Hero.KIRIKO, Button.PRIMARY_FIRE) if localPlayer.talent_ranks[Talent.BANDAGE] > 0 and localPlayer.talent_trigger_times[Talent.BANDAGE] + talent_base_cooldowns[Talent.BANDAGE] <= localPlayer.totalTimeElapsed else ""))))), updateEveryTick(localPlayer.getEyePosition() + (100 * (0.5 * worldVector(Vector.RIGHT, localPlayer, Transform.ROTATION) + (-0.2 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90))) + 3 * localPlayer.getFacingDirection()))), 1.25, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.NEVER)
+    createInWorldText(localPlayer if localPlayer.browsing_shop == false and not localPlayer.isDummy() and not localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.is_using_hearthstone else null, "{0}{1}{2}".format(abilityIconString(Hero.REAPER, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.STEALTH] > 0 and localPlayer.is_using_ability[Talent.STEALTH] == false and localPlayer.talent_trigger_times[Talent.STEALTH] + talent_base_cooldowns[Talent.STEALTH] <= localPlayer.totalTimeElapsed else "", abilityIconString(Hero.REINHARDT, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.JUGGERNAUT] > 0 and localPlayer.talent_trigger_times[Talent.JUGGERNAUT] + talent_base_cooldowns[Talent.JUGGERNAUT] <= localPlayer.totalTimeElapsed else "", "{0}{1}{2}".format(abilityIconString(Hero.HAMMOND, Button.CROUCH) if localPlayer.talent_ranks[Talent.DIVE_BOMB] > 0 and localPlayer.talent_trigger_times[Talent.DIVE_BOMB] + talent_base_cooldowns[Talent.DIVE_BOMB] <= localPlayer.totalTimeElapsed else "", /*abilityIconString(Hero.WIDOWMAKER, Button.ULTIMATE) if localPlayer.talent_ranks[Talent.BLOODTHIRST] > 100 and localPlayer.talent_trigger_times[Talent.GRIM_REAPER] + talent_base_cooldowns[Talent.GRIM_REAPER] <= localPlayer.totalTimeElapsed else */"", "{0}{1}{2}".format(iconString(Icon.SKULL) if localPlayer.talent_ranks[Talent.BERSERKER] > 0 and localPlayer.talent_trigger_times[Talent.BERSERKER] + talent_base_cooldowns[Talent.BERSERKER] <= localPlayer.totalTimeElapsed else "", abilityIconString(Hero.PHARAH, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.FIREBALL] > 0 and localPlayer.talent_trigger_times[Talent.FIREBALL] + talent_base_cooldowns[Talent.FIREBALL] <= localPlayer.totalTimeElapsed else "", "{0}{1}{2}".format(abilityIconString(Hero.MOIRA, Button.ABILITY_1) if localPlayer.talent_ranks[Talent.SHADOWSTEP] > 0 and localPlayer.talent_trigger_times[Talent.SHADOWSTEP] + talent_base_cooldowns[Talent.SHADOWSTEP] - localPlayer.talent_ranks[Talent.SHADOWSTEP] * SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK <= localPlayer.totalTimeElapsed else "", "", "{0}{1}".format(abilityIconString(Hero.BAPTISTE, Button.ABILITY_2) if localPlayer.talent_ranks[Talent.PURITY_FIELD] > 0 and localPlayer.talent_trigger_times[Talent.PURITY_FIELD] + talent_base_cooldowns[Talent.PURITY_FIELD] <= localPlayer.totalTimeElapsed else "", abilityIconString(Hero.KIRIKO, Button.PRIMARY_FIRE) if localPlayer.talent_ranks[Talent.BANDAGE] > 0 and localPlayer.talent_trigger_times[Talent.BANDAGE] + talent_base_cooldowns[Talent.BANDAGE] <= localPlayer.totalTimeElapsed else ""))))), updateEveryTick(localPlayer.getEyePosition() + (100 * (0.5 * worldVector(Vector.RIGHT, localPlayer, Transform.ROTATION) + (-0.2 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90))) + 3 * localPlayer.getFacingDirection()))), 1.25, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.NEVER)
     #Hearthstone
     #createProgressBarInWorldText(localPlayer if localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.using_one_of_the_hearthstones else null, localPlayer.using_hearthstone_timer / 2.75 * 100 if faster_testing == false else 50, "{0} Using Hearthstone".format(iconString(Icon.SPIRAL)) if localPlayer.browsing_shop == false else "{0} YES".format(iconString(Icon.CHECKMARK)) if localPlayer.browsing_shop == true and localPlayer.isHoldingButton(Button.PRIMARY_FIRE) and localPlayer.replacing_talent_show_confirmation == true else "{0} NO".format(iconString(Icon.NO)) if localPlayer.browsing_shop == true and localPlayer.isHoldingButton(Button.SECONDARY_FIRE) and localPlayer.replacing_talent_show_confirmation == true else "{0} Skipping Bonus Talent".format(iconString(Icon.TRASHCAN)) if localPlayer.amount_of_bonus_talents > 0 and localPlayer.isHoldingButton(Button.RELOAD) else "{0} Skipping Talents For XP Boost".format(iconString(Icon.TRASHCAN)) if localPlayer.browsing_shop == true and localPlayer.isHoldingButton(Button.RELOAD) else "", updateEveryTick(localPlayer.getEyePosition() + (100 * (0.55 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)) + 3 * localPlayer.getFacingDirection()))) if localPlayer.browsing_shop == false else localPlayer.selected_talent_position + Vector.UP, 1, Clip.NONE, Color.WHITE, Color.WHITE, ProgressWorldTextReeval.VISIBILITY_POSITION_VALUES_AND_COLOR, SpecVisibility.NEVER)
     #What button to press in Stealth or Berserker or Bandage
@@ -465,7 +466,7 @@ rule "GENERAL - - - [EACH PLAYER] Has Spawned":
     #eventPlayer.xp_orb_position_on_player = false
     if not eventPlayer.isDummy():
         if eventPlayer.xp_boost_is_active == false and ((eventPlayer.amount_of_talents_purchased == 0 or eventPlayer.amount_of_talents_purchased == 25) or eventPlayer.skipped_a_talent == true or (eventPlayer.amount_of_talents_purchased > 0 and eventPlayer.amount_of_talents_purchased <= (player_with_most_talents.amount_of_talents_purchased - 5))):
-            async(activate_xp_boost, AsyncBehavior.RESTART)
+            async(activate_xp_boost, AsyncBehavior.NOOP)
         if eventPlayer.is_using_ability[Talent.STEALTH] == true:
             async(break_stealth, AsyncBehavior.NOOP)
         if eventPlayer.stats[Stat.SHIELDS] > 0:
@@ -491,6 +492,7 @@ rule "GENERAL - - - [EACH PLAYER] Has Spawned":
     #wait is needed to see if max health is upgraded first
     wait()
     heal(eventPlayer, null, eventPlayer.getMaxHealth())
+
 
 rule "GENERAL - - - Player Died":
     @Event playerDied
@@ -539,50 +541,37 @@ rule "GENERAL - - - Player Died":
     */
     
     if not eventPlayer.isDummy():
-        /*
-        if attacker.getCurrentHero() == Hero.REAPER:
-            attacker.random_integer_between_0_to_5 = random.randint(0, 9)
-            if attacker.random_integer_between_0_to_5 <= 1 and attacker.reaper_hello_cooldown == 0:
-                attacker.communicate(Comms.SORRY)
-                attacker.reaper_hello_cooldown = 10
-                */
         eventPlayer.in_combat = 0
         if eventPlayer.xp_boost_is_active == true:
             stopChasingVariable(eventPlayer.experience_current)
+            eventPlayer.xp_boost_is_active = false
         if eventPlayer.is_using_ability[Talent.STEALTH] == true:
             async(break_stealth, AsyncBehavior.NOOP)
-            
-        
-        /*
-        if eventPlayer.talent_ranks[Talent.BURNING_SOUL] > 0:
-            eventPlayer.burning_soul_orb_timer = 4
-            wait()
-            async(dropped_burning_soul_orb, AsyncBehavior.RESTART)
-            xp_orb_mines[eventPlayer.getSlot()] = eventPlayer
-        */
-
-        /*
-        createEffect(getAllPlayers().exclude(eventPlayer) if eventPlayer.dropped_xp_orb == true else null, Effect.ORB, orb_rarity_colors[round(eventPlayer.amount_of_talents_purchased / 5.56)], updateEveryTick(eventPlayer.getPosition() + Vector.UP * 0.25) if eventPlayer.xp_orb_position_on_player == true else updateEveryTick(eventPlayer.xp_orb_location), 1, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
-
-        eventPlayer.player_temp_effects[42] = getLastCreatedEntity()
-        */
         eventPlayer.is_respawning = true
         if attacker == victim:
             eventPlayer.addToScore(1)
-        /*
-        waitUntil(eventPlayer.isInAir(), 0.25)
-        waitUntil(eventPlayer.isOnGround(), 2.75)
-        eventPlayer.xp_orb_location = eventPlayer.getPosition() + Vector.UP * 0.25
-        if eventPlayer.isOnGround():
-            return
-        eventPlayer.xp_orb_destination = eventPlayer.xp_orb_location + Vector.DOWN * 100
-        chase(eventPlayer.xp_orb_location, raycast(eventPlayer.xp_orb_location, eventPlayer.xp_orb_destination, null, getAllPlayers(), true).getHitPosition() + Vector.UP * 0.25, rate=9.8, ChaseReeval.DESTINATION_AND_RATE)
-        */
+    elif spawn_bots:
+        #--- Bot death logic (merged from BOT - - - Died) ---
+        eventPlayer.pathfinder_path = []
+        eventPlayer.pathfinder_reconstructing = false
+        eventPlayer.bot_combat_target = null
+        eventPlayer.bot_combat_awareness_start = 0
+        eventPlayer.stopForcingButton(Button.PRIMARY_FIRE)
+        eventPlayer.bot_state_id = BotState.DEAD
+        eventPlayer.debug_bot_state = "DEAD"
+        eventPlayer.bot_throttle_paused = true
+        eventPlayer.bot_strafe = 0
+        if pathfinder_owner == eventPlayer:
+            pathfinder_owner = null
+        waitUntil(eventPlayer.isAlive() and eventPlayer.hasSpawned(), 99999)
+        wait(BOT_RESPAWN_WAIT)
+        eventPlayer.bot_off_network = true
+        eventPlayer.bot_state_id = BotState.IDLE
 
 
 rule "GENERAL - - - Player Dealt Damage":
     @Event playerDealtDamage
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
 
     if eventPlayer.talent_ranks[Talent.BLOODTHIRST] > 0 and eventPlayer.is_using_ability[Talent.BERSERKER] == true:
         eventPlayer.bloodthirst_remaining_heal_amount += BLOODTHIRST_DAMAGE_TO_HEALING_AMOUNT
@@ -626,20 +615,20 @@ rule "GENERAL - - - Player Dealt Damage":
         /*
         if victim.talent_ranks[Talent.GIGACHAD] > 0 and eventWasCriticalHit:
             heal(victim, victim, min(eventDamage * GIGACHAD_RESIST_NORMALIZED_VICTIM, victim.getMaxHealthOfType(Health.NORMAL) - victim.getHealthOfType(Health.NORMAL)))
-            victim.gigachad_damage_resisted += min(eventDamage * GIGACHAD_RESIST_NORMALIZED_VICTIM, victim.getMaxHealthOfType(Health.NORMAL) - victim.getHealthOfType(Health.NORMAL))
+            victim.gigachad_damage_resisted += eventDamage * GIGACHAD_RESIST_NORMALIZED_VICTIM
         */
         #Gunslinger?
         /*
         if attacker.talent_ranks[Talent.GUNSLINGER] > 0 and attacker.railgun_charge < 100:
             damage(victim, attacker, GUNSLINGER_ADDITIONAL_DAMAGE * GIGACHAD_RESIST_NORMALIZED_VICTIM if victim.talent_ranks[Talent.GIGACHAD] > 0 and eventWasCriticalHit else GUNSLINGER_ADDITIONAL_DAMAGE)
             if victim.talent_ranks[Talent.GIGACHAD] > 0 and eventWasCriticalHit:
-                victim.gigachad_damage_resisted += min(GUNSLINGER_ADDITIONAL_DAMAGE * GIGACHAD_RESIST_NORMALIZED_VICTIM, victim.getMaxHealthOfType(Health.NORMAL) - victim.getHealthOfType(Health.NORMAL))
+                victim.gigachad_damage_resisted += GUNSLINGER_ADDITIONAL_DAMAGE * GIGACHAD_RESIST_NORMALIZED_VICTIM
         */
         #Railgun?
         if attacker.railgun_charge >= 100:
             damage(victim, attacker, RAILGUN_ADDITIONAL_DAMAGE * GIGACHAD_RESIST_NORMALIZED_VICTIM if victim.talent_ranks[Talent.GIGACHAD] > 0 and eventWasCriticalHit else RAILGUN_ADDITIONAL_DAMAGE)
             if victim.talent_ranks[Talent.GIGACHAD] > 0 and eventWasCriticalHit:
-                victim.gigachad_damage_resisted += min(RAILGUN_ADDITIONAL_DAMAGE * GIGACHAD_RESIST_NORMALIZED_VICTIM, victim.getMaxHealthOfType(Health.NORMAL) - victim.getHealthOfType(Health.NORMAL))
+                victim.gigachad_damage_resisted += RAILGUN_ADDITIONAL_DAMAGE * GIGACHAD_RESIST_NORMALIZED_VICTIM
             eventPlayer.railgun_projectile_player_hit = victim
             playEffect(getAllPlayers(), DynamicEffect.DOOMFIST_RISING_UPPERCUT_IMPACT, Color.TEAM_1, victim.getPosition(), 1)
             playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_PILEDRIVER_IMPACT_SOUND, Color.TEAM_2, victim.getPosition(), 100)
@@ -675,7 +664,15 @@ rule "GENERAL - - - Player Dealt Damage":
 
 rule "GENERAL - - - Player Took Damage":
     @Event playerTookDamage
-    @Hero soldier
+
+    #--- Bot: Got Shot — immediate targeting ---
+    if eventPlayer.isDummy():
+        if spawn_bots and not bots_friendly and eventPlayer.bot_combat_target == null and not attacker.isDummy() and attacker.isAlive() and not attacker.browsing_shop and not attacker.is_using_ability[Talent.STEALTH]:
+            eventPlayer.bot_combat_target = attacker
+            eventPlayer.bot_was_shot = true
+            eventPlayer.bot_combat_awareness_start = 0
+            eventPlayer.bot_state_id = BotState.COMBAT
+        return
 
     #if victim.cybernetics_shields > 0:
         #stopChasingVariable(victim.cybernetics_shields)
@@ -683,7 +680,7 @@ rule "GENERAL - - - Player Took Damage":
     if eventAbility == Button.PRIMARY_FIRE or eventAbility == Button.ULTIMATE:
         if victim.talent_ranks[Talent.GIGACHAD] > 0 and eventWasCriticalHit:
             heal(victim, victim, min(eventDamage * GIGACHAD_RESIST_NORMALIZED_VICTIM, victim.getMaxHealthOfType(Health.NORMAL) - victim.getHealthOfType(Health.NORMAL)))
-            victim.gigachad_damage_resisted += min(eventDamage * GIGACHAD_RESIST_NORMALIZED_VICTIM, victim.getMaxHealthOfType(Health.NORMAL) - victim.getHealthOfType(Health.NORMAL))
+            victim.gigachad_damage_resisted += eventDamage * GIGACHAD_RESIST_NORMALIZED_VICTIM
     if victim.is_using_ability[Talent.BLOODTHIRST] == true and victim.bloodthirst_remaining_heal_amount >= 1:
         victim.bloodthirst_remaining_heal_amount -= eventDamage
     if victim.is_using_ability[Talent.BANDAGE] == true and victim != attacker and victim.is_using_ability[Talent.PURITY_FIELD] == false and victim.bandage_progress > 0.032:
@@ -713,71 +710,14 @@ rule "GENERAL - - - Player Slowed (Hit by Cryogenics Talent)":
         wait(0.032, Wait.RESTART_WHEN_TRUE)
     stopChasingVariable(eventPlayer.cryogenics_slow_amount)
     eventPlayer.cryogenics_slow_amount = eventPlayer.stats[Stat.SPEED]
-    if eventPlayer.is_using_ability[Talent.BANDAGE] == true or eventPlayer.is_charging_railgun == true or eventPlayer.is_using_hearthstone == true or eventPlayer.is_using_ability[Talent.JUGGERNAUT] == true or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true:
-        async(player_slowed, AsyncBehavior.RESTART)
+    if eventPlayer.isDummy():
+        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
     else:
-        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
+        recalculate_player_speed()
     #if eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] == 0:
     eventPlayer.setAbility1Enabled(true)
     eventPlayer.cryogenics_slow_duration = 0
 
-/*
-def dropped_xp_orb():
-    @Name "GENERAL - - - Dropped XP Orb"
-    
-    
-    if eventPlayer.talent_ranks[Talent.BURNING_SOUL] > 0:
-
-        createEffect(getAllPlayers(), Effect.TORBJORN_OVERLOADING_SOUND, Color.TEAM_2, eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
-
-        eventPlayer.player_temp_effects[77] = getLastCreatedEntity()
-    */
-    /*
-    while eventPlayer.dropped_xp_orb == true:
-        #If there are other players near your XP Orb
-        if (len([player for player in (getPlayersInRadius(eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, 2, Team.ALL, LosCheck.OFF)) if player.getCurrentHero() == Hero.SOLDIER and player != eventPlayer])) > 0:
-            #Wait until the player near your XP Orb is not picking up another XP Orb
-            waitUntil(((((sorted([player for player in (getPlayersInRadius(eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, 2, Team.ALL, LosCheck.OFF)) if player.getCurrentHero() == Hero.SOLDIER and player != eventPlayer], lambda i: distance(eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, i.getPosition())))[0]).variable)[20]) == null, 99999)
-            #Set the nearest player to having picked up your XP Orb
-            (((sorted([player for player in (getPlayersInRadius(eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, 2, Team.ALL, LosCheck.OFF)) if player.getCurrentHero() == Hero.SOLDIER and player != eventPlayer], lambda i: distance(eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, i.getPosition())))[0]).variable)[20] = eventPlayer
-        if eventPlayer.burning_soul_orb_timer > 0:
-            playEffect(getAllPlayers().exclude(eventPlayer), DynamicEffect.PHARAH_BARRAGE_EXPLOSION, Color.TEAM_1, eventPlayer.getPosition() if eventPlayer.xp_orb_position_on_player == true else eventPlayer.xp_orb_location, 1)
-        wait(0.25)
-        destroyEffect(eventPlayer.player_temp_effects[77])*/
-
-        /*
-rule "GENERAL - - - Picked Up XP Orb":
-    @Event eachPlayer
-    @Hero soldier
-    @Condition eventPlayer.owner_of_picked_up_xp_orb != null
-    
-    if eventPlayer.experience_current < eventPlayer.experience_max:
-        smallMessage(eventPlayer, "{0} +{1} XP!".format(abilityIconString(Hero.GENJI, Button.JUMP), round(eventPlayer.owner_of_picked_up_xp_orb.experience_max * 0.2 * eventPlayer.stats[Stat.XP])))
-    playEffect(getAllPlayers(), DynamicEffect.BUFF_IMPACT_SOUND, Color.WHITE, eventPlayer, 75)
-    playEffect(getAllPlayers(), DynamicEffect.GOOD_PICKUP_EFFECT, orb_rarity_colors[round(eventPlayer.owner_of_picked_up_xp_orb.amount_of_talents_purchased / 5.56)], eventPlayer.getPosition(), 1)
-    #EXPERIENCE
-    if eventPlayer.experience_current < eventPlayer.experience_max:
-        eventPlayer.experience_current += eventPlayer.owner_of_picked_up_xp_orb.experience_max * 0.2 * eventPlayer.stats[Stat.XP]
-    #MINE?
-    if eventPlayer.owner_of_picked_up_xp_orb.talent_ranks[Talent.BURNING_SOUL] > 0 and eventPlayer.owner_of_picked_up_xp_orb.burning_soul_orb_timer > 0:
-        eventPlayer.owner_of_picked_up_xp_orb.burning_soul_orb_timer = 0
-    eventPlayer.owner_of_picked_up_xp_orb.dropped_xp_orb = false
-    wait()
-    eventPlayer.owner_of_picked_up_xp_orb = null
-    
-    if eventPlayer.talent_ranks[Talent.ALCHEMIST] > 0 and eventPlayer.amount_of_health_potions < 3 and ALCHEMIST_PROC_CHANCE:
-        if eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0:
-            eventPlayer.health_potion_cooldown_memory = eventPlayer.totalTimeElapsed - eventPlayer.talent_trigger_times[Talent.HEALTH_POTIONS]
-            eventPlayer.talent_trigger_times[Talent.HEALTH_POTIONS] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.HEALTH_POTIONS] - eventPlayer.talent_ranks[Talent.ALCHEMIST]
-        elif eventPlayer.talent_ranks[Talent.POISON_VIALS] > 0:
-            eventPlayer.health_potion_cooldown_memory = eventPlayer.totalTimeElapsed - eventPlayer.talent_trigger_times[Talent.POISON_VIALS]
-            eventPlayer.talent_trigger_times[Talent.POISON_VIALS] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.POISON_VIALS] - eventPlayer.talent_ranks[Talent.ALCHEMIST]
-        wait()
-        smallMessage(eventPlayer, "{0} +1 {1}".format(iconString(Icon.RADIOACTIVE), "Health Potion!" if eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0 else "Poison Vial!"))
-    if eventPlayer.talent_ranks[Talent.SOUL_HARVEST] > 0:
-        heal(eventPlayer, eventPlayer, SOUL_HARVEST_HEALING)
-        playEffect(getAllPlayers(), DynamicEffect.BRIGITTE_REPAIR_PACK_IMPACT_SOUND, Color.WHITE, eventPlayer.getPosition(), 100)
-    */
 def which_players_have_grim_reaper():
     @Name "Subroutine: Which players have grim reaper"
     
@@ -791,28 +731,32 @@ def which_players_have_grim_reaper():
     #NEW GRIM REAPER
     players_with_grim_reaper = [player for player in getAllPlayers() if player.talent_ranks[Talent.GRIM_REAPER] > 0]
 
-def player_slowed():
-    @Name "Subroutine: Player Slowed"
-    
-    #using bandage, hearthstone, grim reaper or purity field
-    if eventPlayer.is_using_ability[Talent.BANDAGE] == true or eventPlayer.is_using_ability[Talent.GRIM_REAPER] == true or eventPlayer.is_using_hearthstone == true or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true:
+def recalculate_player_speed():
+    @Name "Subroutine: Recalculate Player Speed"
+
+    if eventPlayer.is_using_ability[Talent.BANDAGE] or eventPlayer.is_using_ability[Talent.GRIM_REAPER] or eventPlayer.is_using_hearthstone or eventPlayer.is_using_ability[Talent.PURITY_FIELD]:
         eventPlayer.stats[Stat.SPEED] = 25
-        #if player is not affected by cryogenics
-        if eventPlayer.hit_by_talent[Talent.CRYOGENICS] == null:
-            eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
-        waitUntil(eventPlayer.is_using_ability[Talent.BANDAGE] == false and eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false and eventPlayer.is_using_hearthstone == false and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false, 99999)
-    #railgun
-    if eventPlayer.is_charging_railgun == true:
+    elif eventPlayer.is_charging_railgun:
         eventPlayer.stats[Stat.SPEED] = 50
-        #if player is not affected by cryogenics
-        if eventPlayer.hit_by_talent[Talent.CRYOGENICS] == null:
-            eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
-        waitUntil(eventPlayer.is_charging_railgun == false, 99999)
-    if eventPlayer.is_using_ability[Talent.BANDAGE] == false and eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false and eventPlayer.is_using_hearthstone == false and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false:
+    else:
         eventPlayer.stats[Stat.SPEED] = 100
-        if eventPlayer.hit_by_talent[Talent.CRYOGENICS] == null:
-            eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
+
+    if eventPlayer.hit_by_talent[Talent.CRYOGENICS] == null:
+        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
         
+
+rule "GENERAL - - - Restore Speed When No Slow Active":
+    @Event eachPlayer
+    @Condition not eventPlayer.isDummy()
+    @Condition eventPlayer.is_using_ability[Talent.BANDAGE] == false
+    @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
+    @Condition eventPlayer.is_using_hearthstone == false
+    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_charging_railgun == false
+    @Condition eventPlayer.stats[Stat.SPEED] != 100
+
+    recalculate_player_speed()
+
 
 rule "GENERAL - - - Anti Crash Enable":
     @Condition antiCrashActivated == false
@@ -833,7 +777,7 @@ rule "GENERAL - - - Anti Crash Disable":
 /*
 rule "dpstracking":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
 
     chase(eventPlayer.dpstracking_time, 0, rate=1, ChaseReeval.DESTINATION_AND_RATE)
     hudText(eventPlayer, eventPlayer.dpstracking_damage, "Total Damage", null, HudPosition.RIGHT, 107, Color.YELLOW, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
@@ -842,7 +786,7 @@ rule "dpstracking":
 
 rule "dpstracking - dealt damage":
     @Event playerDealtDamage
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition victim != attacker
 
     destroyInWorldText(eventPlayer.dpstracking_textID)
@@ -856,7 +800,7 @@ rule "dpstracking - dealt damage":
 
 rule "dpstracking - start timer":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == true
 
     eventPlayer.dpstracking_time = dpstracking_dpsTime
@@ -871,17 +815,9 @@ rule "dpstracking - start timer":
 
 rule "GENERAL - - - Update Damage Text":
     @Event playerTookDamage
-    @Hero soldier
-    @Condition damage_text == true
+    #@Condition not eventPlayer.isDummy()
+    @Condition debug_damage_text == true
 
     attacker.recentDamageDealtToSlot[victim.getSlot()] += eventDamage
     wait(1.5, Wait.RESTART_WHEN_TRUE)
     attacker.recentDamageDealtToSlot[victim.getSlot()] = 0
-
-    #if damage_text == true:
-        #async(update_damage_text, AsyncBehavior.RESTART)
-
-#def update_damage_text():
-    #attacker.recentDamageDealtToSlot[victim.getSlot()] += eventDamage
-    #wait(1.5, Wait.RESTART_WHEN_TRUE)
-    #attacker.recentDamageDealtToSlot[victim.getSlot()] = 0

@@ -1,0 +1,6 @@
+1. Pick any hitscan hero. No hero start with any abilities, which mean I have to remove Soldier: 76's Sprint and Helix Rockets Abilities. More variety. In that case, I need to redesign many talents, as the way some talents are designed at the moment rely on Soldier: 76's abilities.
+	Wins: Game mode will be more popular
+	Risks: Becoming too complex with too many rules, but might be possible to avoid with smart design
+2. Remap keybinds so game is playable on gamepad. Some abilities doesn't work well on gamepad. One example is Jetpack. You can't steer both thumbsticks and press A to use jetpack at the same time. Sort talent type to one specific keybind. Do I have to change PC keybinds, or can detect if gamepad input?
+	Wins: Game mode will be more popular
+3. Fireball should be a choice between it and Helix Rockets. Can also add a grenade type ability. All can go in the secondary fire slot.

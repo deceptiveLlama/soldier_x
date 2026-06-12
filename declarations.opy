@@ -39,10 +39,7 @@ enum Talent:
 globalvar dpstracking_dpsTime = createWorkshopSetting(int[1:60], "Settings", "DPS Time", 20, 1)
 globalvar dpstracking_bot
 */
-globalvar init_locked = false
-globalvar init_owner = null
 globalvar map_is_changing = false
-globalvar antiCrashActivated
 globalvar dummy_bot_spawn_facing
 globalvar dummy_bot_spawn_position
 /*globalvar health_potions_time_in_combat
@@ -65,8 +62,33 @@ globalvar players_with_grim_reaper = []
 globalvar player_with_most_talents = null
 globalvar xp_orbs_current_index
 globalvar player_picking_up_orb
-globalvar faster_testing = createWorkshopSettingBool("02. Testing", "Faster Testing", false, 1)
-globalvar damage_text = createWorkshopSettingBool("02. Testing", "Damage Text", false, 3)
+#--- Bot system (multi-file) ---
+globalvar spawn_bots = createWorkshopSettingBool("01. Bots", "Spawn bots?", true, 0)
+globalvar amount_of_bots_and_players = createWorkshopSettingInt("01. Bots", "How many bots and players?", 8, 1, 8, 1)
+globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", false, 1)
+globalvar pathfinder_owner = null
+globalvar pathfinder_budget = 1
+globalvar map_nodes = []
+globalvar map_attributes_raw = []
+globalvar map_flat_neighbors = []
+globalvar map_temp_neighbors = []
+globalvar map_encoded = false
+globalvar map_ready = false
+
+#--- Shop system (multi-file) ---
+globalvar shop_location
+globalvar shop_talent_positions
+globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 536, 589, 648, 713, 785, 863, 949, 1044, 1149, 1264, 1390, 1529, 1682, 1850, 2035, 2239, 2462, 2709]
+playervar talent_trigger_times
+playervar railgun_charge
+
+#--- Debug variables (plain declarations — Workshop Settings assigned in debug files) ---
+globalvar debug_spectator_tools
+globalvar debug_damage_text
+globalvar debug_texts = []
+
+#--- Testing ---
+globalvar faster_testing
 
 enum Orb:
     OWNING_PLAYER,
@@ -101,8 +123,9 @@ enum Stat:
     VOICE,
     SIZE,
     KNOCKBACK_RECEIVED,
+    EYE_HEIGHT,
 
-#playervar stats = [Stat.DAMAGE, Stat.HEALTH, Stat.SPEED, Stat.ARMOR, Stat.SHIELDS, Stat.XP, Stat.VOICE, Stat.SIZE, Stat.KNOCKBACK_RECEIVED]
+#playervar stats = [Stat.DAMAGE, Stat.HEALTH, Stat.SPEED, Stat.ARMOR, Stat.SHIELDS, Stat.XP, Stat.VOICE, Stat.SIZE, Stat.KNOCKBACK_RECEIVED, Stat.EYE_HEIGHT]
 playervar stats =  [100,         200,         100,        0,          0,            0.65,    1,          1,         100]
 
 /*playervar dpstracking_started_timer
@@ -110,6 +133,8 @@ playervar dpstracking_time
 playervar dpstracking_damage
 playervar dpstracking_textID
 playervar dpstracking_position*/
+playervar i
+playervar bot_loop_var
 playervar rockets_cooldown
 playervar totalTimeElapsed
 playervar variable
@@ -126,7 +151,6 @@ playervar experience_max = 250
 playervar health_potion_cooldown_memory
 playervar in_combat = 0
 #playervar indexMemory
-playervar interactablePlayers
 playervar is_electrified = 0
 playervar is_using_ability = []
 playervar is_using_hearthstone = [false, false]
@@ -134,18 +158,14 @@ playervar juggernaut_charge
 playervar talents_offered_in_shop
 playervar player_name = "{0}".format(eventPlayer)
 playervar player_temp_effects
-playervar poison_vial_clouds_spawned
-playervar poison_vial_effects
 playervar possible_talents = [Talent.PURITY_FIELD, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
 #playervar poison_vials_projPos
 #playervar poison_vials_projPosIn0032
-playervar random_integer_between_0_to_5
 /*playervar replace_replacing_or_cancelled = [false, false, false]*/
 playervar skipped_a_talent
 playervar talent_counter_or_position_etc
 playervar talent_ranks = []
 playervar talents_you_do_not_have = [Talent.PURITY_FIELD, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
-playervar time_since_poison_vial_exploded
 playervar using_one_of_the_hearthstones
 playervar which_is_talent_unique_unlocked = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
 playervar xp_boost_is_active
@@ -168,7 +188,10 @@ playervar grim_reaper_ramp_up = 0
 playervar purity_field_duration = 0
 playervar adrenaline_rush_value = 100
 playervar recentDamageDealtToSlot = 0
+playervar current_purity_field_target = 0
+playervar current_dive_bomb_target = 0
 
+#--- Multi-file defineMember (variable[0-42]) ---
 #!defineMember is_using_hearthstone variable[0]
 #!defineMember is_using_skip_talent variable[1]
 #!defineMember is_using_vote_yes variable[2]
@@ -177,89 +200,46 @@ playervar recentDamageDealtToSlot = 0
 #!defineMember replacing_talent_show_bought_talents variable[5]
 #!defineMember replacing_talent_cancelled variable[6]
 #!defineMember totalTimeElapsed_alignment variable[7]
-#!defineMember amount_of_bullets variable[8]
-#!defineMember bandage_heal_over_time_id variable[9]
-#!defineMember is_charging_railgun variable[10]
-#!defineMember bloodthirst_heal_amount_for_hud variable[11]
-#!defineMember bloodthirst_remaining_heal_amount variable[12]
-#!defineMember bloodthirst_total_heal_amount variable[13]
-#!defineMember bloodthirst_decay_per_second variable[14]
-#!defineMember selected_bought_talent variable[15]
-#!defineMember selected_talent_in_shop variable[16]
-#!defineMember amount_of_bonus_talents variable[17]
-#!defineMember grim_reaper_damage_dealt variable[18]
-#!defineMember grim_reaper_damage_resisted variable[19]
-#!defineMember gigachad_damage_resisted variable[20]
-#!defineMember purity_field_position variable[21]
-##!defineMember xp_orb_position_on_player variable[##]
-##!defineMember owner_of_picked_up_xp_orb variable[##]
-#!defineMember health_potion_1_timestamp variable[22]
-#!defineMember health_potion_2_timestamp variable[23]
-#!defineMember health_potion_3_timestamp variable[24]
-#!defineMember hit_by_dive_bomb_effect_counter variable[25]
-#!defineMember possible_talents_selector variable[26]
-#!defineMember ignite_raycast_hit_position variable[27]
-#!defineMember pyromaniac_start_time variable[28]
-#!defineMember potion_hot_id_1 variable[29]
-#!defineMember potion_hot_id_2 variable[30]
-#!defineMember potion_hot_id_3 variable[31]
-#!defineMember pyromaniac_hot_id variable[32]
-#!defineMember cybernetics_health_pool_id variable[33]
-#!defineMember jetpack_sound_id variable[34]
-#!defineMember pyromaniac_effect_id variable[35]
-#!defineMember ignore_pain_effect_id variable[36]
-#!defineMember ignore_pain_sound_id variable[37]
-#!defineMember stealth_effect_id variable[38]
-#!defineMember stealth_sound_id variable[39]
-#!defineMember railgun_charge_effect_id variable[40]
-#!defineMember lifesteal_sound_id variable[41]
-#!defineMember lifesteal_target_effect_id variable[42]
-#!defineMember lifesteal_self_effect_id variable[43]
-#!defineMember health_regen_sound_id variable[44]
-#!defineMember health_regen_effect_id variable[45]
-#!defineMember exit_shop_with_fireball variable[46]
-#!defineMember xp_received_message variable[47]
-#!defineMember stealth_stun_text_id variable[48]
-#!defineMember current_stealth_target variable[49]
-#!defineMember poisonous_dagger_effect_id variable[50]
-#!defineMember poisonous_dagger_sound_id variable[51]
-#!defineMember burning_soul_particle_effect_id variable[52]
-#!defineMember burning_soul_material_effect_id variable[53]
-#!defineMember berserker_team1_effect_id variable[54]
-#!defineMember berserker_team2_effect_id variable[55]
-#!defineMember berserker_sound_id variable[56]
-#!defineMember railgun_charge_sound variable[57]
-#!defineMember grim_reaper_target variable[58]
-#!defineMember grim_reaper_camera_destination variable[59]
-#!defineMember grim_reaper_feet_destination variable[60]
-#!defineMember grim_reaper_effect_id variable[61]
-#!defineMember grim_reaper_sound_id variable[62]
-#!defineMember victims_in_grim_reaper_radius variable[63]
-#!defineMember grim_reaper_cast_effect_id variable[64]
-#!defineMember grim_reaper_cast_sound_id variable[65]
-#!defineMember stealth_effect_id2 variable[66]
-#!defineMember casting_sound_effect_id variable[67]
-#!defineMember casting_effect_id variable[68]
-#!defineMember casting_success variable[69]
-#!defineMember grim_reaper_aim_indicator variable[70]
-#!defineMember jetpack_beam_effect_id variable[71]
-#!defineMember adrenaline_rush_damage_dealt variable[72]
-#!defineMember adrenaline_rush_effect_id variable[73]
-#!defineMember adrenaline_rush_effect_id2 variable[74]
-#!defineMember adrenaline_rush_effect_id3 variable[75]
-#!defineMember grim_reaper_effect_id3 variable[76]
-#!defineMember grim_reaper_effect_id4 variable[77]
+#!defineMember is_charging_railgun variable[8]
+#!defineMember selected_bought_talent variable[9]
+#!defineMember selected_talent_in_shop variable[10]
+#!defineMember amount_of_bonus_talents variable[11]
+#!defineMember grim_reaper_damage_dealt variable[12]
+#!defineMember grim_reaper_damage_resisted variable[13]
+#!defineMember gigachad_damage_resisted variable[14]
+#!defineMember exit_shop_with_fireball variable[15]
+#!defineMember possible_talents_selector variable[16]
+#!defineMember grim_reaper_target variable[17]
+#!defineMember grim_reaper_camera_destination variable[18]
+#!defineMember grim_reaper_feet_destination variable[19]
+#!defineMember grim_reaper_effect_id variable[20]
+#!defineMember grim_reaper_sound_id variable[21]
+#!defineMember victims_in_grim_reaper_radius variable[22]
+#!defineMember grim_reaper_cast_effect_id variable[23]
+#!defineMember grim_reaper_aim_indicator variable[24]
+#!defineMember casting_effect_id variable[25]
+#!defineMember casting_sound_effect_id variable[26]
+#!defineMember casting_success variable[27]
+#!defineMember cybernetics_health_pool_id variable[28]
+#!defineMember stealth_effect_id variable[29]
+#!defineMember stealth_sound_id variable[30]
+#!defineMember stealth_effect_id2 variable[31]
+#!defineMember stealth_stun_text_id variable[32]
+#!defineMember current_stealth_target variable[33]
+#!defineMember railgun_charge_effect_id variable[34]
+#!defineMember victims_in_purity_field_radius variable[35]
+#!defineMember victims_in_dive_bomb_radius variable[36]
+#!defineMember dive_bomb_damage_total variable[37]
+#!defineMember bot_throttle_paused variable[38]
+#!defineMember bot_edge_attr variable[39]
+#!defineMember bot_strafe variable[40]
+#!defineMember debug_bot_state variable[41]
+#!defineMember debug_bot_stuck variable[42]
 
-
-
+#--- Shared global defineMember (global_variable[0-49]) ---
 
 #!defineMember highest_grim_reaper_rank_in_match global_variable[0]
-#for debugging server load
-#!defineMember server_load_avg global_variable[1]
-#!defineMember server_load_peak global_variable[2]
-#!defineMember server_load_samples global_variable[3]
-#!defineMember server_load_combat_avg global_variable[4]
-#!defineMember server_load_bots_joining_avg global_variable[5]
+#!defineMember debug_bot_walk_fail_pos global_variable[1]
 
 #Subroutine names
 subroutine buy_debug_talents
@@ -291,12 +271,11 @@ subroutine replace_talent
 subroutine spawned_with_fireball
 subroutine stopped_using_hearthstone
 subroutine using_one_of_the_hearthstones
-subroutine player_slowed
+subroutine recalculate_player_speed
 subroutine which_players_have_grim_reaper
 subroutine grim_reaper_casted
 subroutine casting
 subroutine block_player_input
-subroutine update_damage_text
 
 #Activated extensions
 
@@ -311,7 +290,7 @@ subroutine update_damage_text
 #!define generateTalents() __script__("talents.js")
 generateTalents()
 
-macro ALCHEMIST_PROC_CHANCE = random.randint(player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] * 13.2, 100)
+macro ALCHEMIST_PROC_CHANCE = random.randint(33 + ((player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] - 1) * 8.25), 100)
 macro BLOODTHIRST_DAMAGE_TO_HEALING_AMOUNT = eventDamage * (0.19 + eventPlayer.talent_ranks[Talent.BLOODTHIRST] * 0.062)
 macro BERSERKER_DURATION = 3.75 + eventPlayer.talent_ranks[Talent.BERSERKER] * 1.25
 macro BURNING_SOUL_DAMAGE = 3 + eventPlayer.talent_ranks[Talent.BURNING_SOUL] * 0.6
@@ -376,16 +355,20 @@ macro GRIM_REAPER_THRESHOLD_NORMALIZED_VICTIM = (0.150 + (victim.talent_ranks[Ta
 #macro POISON_VIALS_DAMAGE_OVER_TIME = floor(5.6 + eventPlayer.talent_ranks[Talent.POISON_VIALS] * 1.9)
 #macro SPRINTER_MOVE_SPEED_MULTIPLIER = eventPlayer.stats[Stat.SPEED] * (1 + eventPlayer.talent_ranks[Talent.SPRINTER] * 0.066)
 #Dive Bomb: Rank 1: 75 total damage, Rank 5: 150 total damage (The damage is doubled if you have been in air for 1 second)
-macro DIVE_BOMB_DAMAGE = (75 + eventPlayer.talent_ranks[Talent.DIVE_BOMB] * 25)
+macro DIVE_BOMB_DAMAGE = (56.25 + eventPlayer.talent_ranks[Talent.DIVE_BOMB] * 18.75)
 #For HUD
-macro DIVE_BOMB_DAMAGE_LOCAL = (75 + localPlayer.talent_ranks[Talent.DIVE_BOMB] * 25)
+macro DIVE_BOMB_DAMAGE_LOCAL = (56.25 + localPlayer.talent_ranks[Talent.DIVE_BOMB] * 18.75)
 #Lifesteal: Rank 1: 18.7% healing, Rank 5: 37.5% healing
 macro LIFESTEAL_HEAL = eventDamage * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
 #macro LIFESTEAL_BOMBARDMENT_HEAL = eventDamage * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047) / 2
 macro LIFESTEAL_RAILGUN_HEAL = (RAILGUN_ADDITIONAL_DAMAGE + eventDamage) * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
 #macro LIFESTEAL_GUNSLINGER_HEAL = (GUNSLINGER_ADDITIONAL_DAMAGE + eventDamage) * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
-macro GIGACHAD_RESIST_NORMALIZED_VICTIM = (0.15 + victim.talent_ranks[Talent.GIGACHAD] * 0.05)
+
+#25% at Rank 1, 50% at Rank 5
+macro GIGACHAD_RESIST_NORMALIZED_VICTIM = (3 + victim.talent_ranks[Talent.GIGACHAD]) / 16
+
 macro GIGACHAD_KNOCKBACK_RECEIVED = 100 - eventPlayer.talent_ranks[Talent.GIGACHAD] * 20
+
 macro PURITY_FIELD_HEALING_RECEIVED = 125 + eventPlayer.talent_ranks[Talent.PURITY_FIELD] * 25
 macro PURITY_FIELD_DURATION = 3.75 + eventPlayer.talent_ranks[Talent.PURITY_FIELD] * 1.25
 macro STEALTH_STUN_DURATION = 0.8 + eventPlayer.talent_ranks[Talent.STEALTH] * 0.2

@@ -1,20 +1,54 @@
 #!mainFile "soldier_x.opy"
 
+#--- Debug global defineMember (global_variable[100-105]) ---
+#!defineMember debug_srv_load_sum global_variable[100]
+#!defineMember debug_srv_load_timer global_variable[101]
+#!defineMember debug_srv_load_sample_count global_variable[102]
+#!defineMember debug_srv_load_avg global_variable[103]
+#!defineMember debug_srv_load_avg_init global_variable[104]
+#!defineMember debug_srv_load_avg_10s global_variable[105]
+
+#--- Workshop Settings (only active when this file is included) ---
+rule "DEBUG - - - Init Release Settings":
+    debug_damage_text = createWorkshopSettingBool("02. Testing", "Damage Text", false, 3)
+    faster_testing = createWorkshopSettingBool("02. Testing", "Faster Testing", false, 1)
 
 rule "DEBUG (For Spectator Only)":
 
-    hudText(hostPlayer if hostPlayer.getHero() != Hero.SOLDIER else null, "Srv Load: {0} {1} {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), "", "", HudPosition.ACTUALLY_LEFT, 0, Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN if getAverageServerLoad() < 100 else null, Color.RED, Color.RED, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
-/*
-    hudText(hostPlayer if hostPlayer.getHero() != Hero.SOLDIER else null, "Leading Player: {0}, Talents: {1}".format(player_with_most_talents, player_with_most_talents.amount_of_talents_purchased), "Player Null?: {0}, Talent Null? {1}".format("Yes" if player_with_most_talents == null else "No", "Yes" if player_with_most_talents.amount_of_talents_purchased == null else "No"), null, HudPosition.ACTUALLY_LEFT, 99, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
+    hudText(hostPlayer, "Srv Load: {0} {1} {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), "Real Avg: Init: {0} | First Min: {1} | Last 10s: {2}".format(debug_srv_load_avg_init, debug_srv_load_avg, debug_srv_load_avg_10s), "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), HudPosition.ACTUALLY_LEFT, 0, Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN if getAverageServerLoad() < 100 else null, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
 
-    #hudText(hostPlayer, "Amount of texts: {0}".format(getNumberOfTextIds()), "", "", HudPosition.ACTUALLY_LEFT, 99, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
 
-    #hudText(hostPlayer, "Amount of effects: {0}".format(getNumberOfEntityIds()), "", "", HudPosition.ACTUALLY_LEFT, 99, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
+rule "DEBUG - - - Real Server Load Average":
+    #--- Phase 1: Init (sample until all bots have respawned) ---
+    while getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players \
+        or len([p for p in getAllPlayers() if p.isDummy() and not p.reaper_has_respawned_once]) > 0:
+        debug_srv_load_sample_count += 1
+        debug_srv_load_sum += getServerLoad()
+        debug_srv_load_avg_init = round(debug_srv_load_sum / debug_srv_load_sample_count)
+        wait()
 
-    #hudText(hostPlayer if hostPlayer.getHero() != Hero.SOLDIER else null, "Init_owner: {0}, init_locked: {1}".format(init_owner, init_locked), "", "", HudPosition.ACTUALLY_LEFT, 99, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
+    #--- Reset for phase 2 ---
+    debug_srv_load_sum = 0
+    debug_srv_load_sample_count = 0
 
-    
-*/
+    #--- Phase 2: Running (sample for 60 seconds) ---
+    debug_srv_load_timer = getTotalTimeElapsed()
+    while getTotalTimeElapsed() - debug_srv_load_timer < 60:
+        debug_srv_load_sample_count += 1
+        debug_srv_load_sum += getServerLoad()
+        debug_srv_load_avg = round(debug_srv_load_sum / debug_srv_load_sample_count)
+        wait()
+    #--- Phase 3: Continuous rolling 10-second average ---
+    while true:
+        debug_srv_load_sum = 0
+        debug_srv_load_sample_count = 0
+        debug_srv_load_timer = getTotalTimeElapsed()
+        while getTotalTimeElapsed() - debug_srv_load_timer < 10:
+            debug_srv_load_sample_count += 1
+            debug_srv_load_sum += getServerLoad()
+            debug_srv_load_avg_10s = round(debug_srv_load_sum / debug_srv_load_sample_count)
+            wait()
+    debug_srv_load_timer = 0
 
 globalvar debug_bandage = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Bandage", 0, 0, 5, 0)
 globalvar debug_berserker = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Berserker", 0, 0, 5, 0)
@@ -43,16 +77,16 @@ globalvar debug_railgun = createWorkshopSettingInt("03. Talents (Use at your own
 globalvar debug_stealth = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Stealth", 0, 0, 5, 0)
 globalvar debug_shadowstep = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Shadowstep", 0, 0, 5, 0)
 
-globalvar reload_for_xp = createWorkshopSettingBool("02. Testing", "Hold Reload for XP", false, 0)
+globalvar debug_reload_for_xp = createWorkshopSettingBool("02. Testing", "Hold Reload for XP", false, 0)
 
 rule "DEBUG - - - Hold Reload For XP [DEFAULT: OFF]":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     #@Condition hostPlayer == eventPlayer
     @Condition eventPlayer.isHoldingButton(Button.RELOAD) == true
     @Condition eventPlayer.can_enter_shop == false
     @Condition eventPlayer.browsing_shop == false
-    @Condition reload_for_xp == true
+    @Condition debug_reload_for_xp == true
     
     if eventPlayer.experience_current < eventPlayer.experience_max:
         eventPlayer.experience_current += eventPlayer.experience_max/25
@@ -62,7 +96,7 @@ rule "DEBUG - - - Hold Reload For XP [DEFAULT: OFF]":
 
 rule "DEBUG - - - Activate Admin Rights [DEFAULT: OFF]":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     #@Condition hostPlayer == eventPlayer
 
     buy_debug_talents()
@@ -198,10 +232,10 @@ def buy_debug_talents():
         eventPlayer.talent_ranks[Talent.GRIM_REAPER] = debug_grim_reaper
         eventPlayer.amount_of_talents_purchased += debug_grim_reaper
     if debug_gigachad > 0:
-        eventPlayer.talent_ranks[Talent.GIGACHAD] = 1
         eventPlayer.bought_talents.append(Talent.GIGACHAD)
-        buy_gigachad()
-        eventPlayer.talent_ranks[Talent.GIGACHAD] = debug_gigachad
+        for eventPlayer.i in range(debug_gigachad):
+            eventPlayer.talent_ranks[Talent.GIGACHAD] += 1
+            buy_gigachad()
         eventPlayer.amount_of_talents_purchased += debug_gigachad
     if debug_stealth > 0:
         eventPlayer.talent_ranks[Talent.STEALTH] = 1

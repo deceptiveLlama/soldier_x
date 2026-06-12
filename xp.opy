@@ -1,8 +1,9 @@
 #!mainFile "soldier_x.opy"
 
+#--- XP-only defineMember (variable[500]) ---
+#!defineMember xp_received_message variable[500]
+
 subroutine activate_xp_boost
-globalvar debug_loop_count
-globalvar xp_orb_to_remove_selector
 
 rule "XP SYSTEM - - - XP Orbs":
     @Condition len(xp_orbs) > 0 == true
@@ -29,10 +30,10 @@ rule "XP SYSTEM - - - XP Orbs":
             #debug_loop_count += 1
 
             #any players within current xp orb?
-            if [player for player in getRealPlayersInRadius(xp_orbs[xp_orbs_current_index][Orb.POSITION], 2, Team.ALL, LosCheck.SURFACES) if player.getHero() == Hero.SOLDIER and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] > 0:
+            if [player for player in getRealPlayersInRadius(xp_orbs[xp_orbs_current_index][Orb.POSITION], 2, Team.ALL, LosCheck.SURFACES) if player.isDummy() == false and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] > 0:
 
                 #if there is, who is closest?
-                player_picking_up_orb = [player for player in getRealClosestPlayer(xp_orbs[xp_orbs_current_index][Orb.POSITION], Team.ALL) if player.getHero() == Hero.SOLDIER and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] 
+                player_picking_up_orb = [player for player in getRealClosestPlayer(xp_orbs[xp_orbs_current_index][Orb.POSITION], Team.ALL) if player.isDummy() == false and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] 
                 
                 #destroy created effect and play pick up effects
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.ORB_EFFECT_ID])
@@ -55,10 +56,10 @@ rule "XP SYSTEM - - - XP Orbs":
                 if xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] >= getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
 
                     #apply impulse
-                    player_picking_up_orb.applyImpulse(directionTowards(xp_orbs[xp_orbs_current_index][Orb.POSITION], player_picking_up_orb.getEyePosition()), 12.5 * (player_picking_up_orb.stats[Stat.KNOCKBACK_RECEIVED] / 100), Relativity.TO_WORLD, Impulse.CANCEL_CONTRARY_MOTION_XYZ)
+                    player_picking_up_orb.applyImpulse(angleToDirection(horizontalAngleOfDirection(directionTowards(xp_orbs[xp_orbs_current_index][Orb.POSITION], player_picking_up_orb.getEyePosition() + Vector.DOWN)), min(verticalAngleOfDirection(directionTowards(xp_orbs[xp_orbs_current_index][Orb.POSITION], player_picking_up_orb.getEyePosition() + Vector.DOWN)), -30)), 12.5 * (player_picking_up_orb.stats[Stat.KNOCKBACK_RECEIVED] / 100), Relativity.TO_WORLD, Impulse.CANCEL_CONTRARY_MOTION_XYZ)
 
                     #wait to see knockback effect before getting killed
-                    wait()
+                    wait(0.032)
 
                     #damage
                     damage(player_picking_up_orb, xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER], BURNING_SOUL_ORB_DAMAGE)
@@ -90,6 +91,8 @@ rule "XP SYSTEM - - - XP Orbs":
                     player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.SHADOWSTEP]
                 
                 #remove from array by index
+                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
+                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
                 del xp_orbs[xp_orbs_current_index]
                 if RULE_CONDITION:
                     goto RULE_START
@@ -118,7 +121,7 @@ def activate_xp_boost():
 
 rule "XP SYSTEM - - - Level Up":
     @Event eachPlayer
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.experience_current >= eventPlayer.experience_max
     
     eventPlayer.can_enter_shop = true
@@ -128,7 +131,7 @@ rule "XP SYSTEM - - - Level Up":
 
 rule "XP SYSTEM - - - Earned Elimination":
     @Event playerEarnedElimination
-    @Hero soldier
+    @Condition not eventPlayer.isDummy()
     
     if eventPlayer.experience_current < eventPlayer.experience_max:
         eventPlayer.experience_current += victim.experience_max * 0.075 * eventPlayer.stats[Stat.XP]
