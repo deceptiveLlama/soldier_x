@@ -1,6 +1,6 @@
-#!define TOP_RIGHT_TEXT "Soldier: X [v3.2.2] - Made By Psyrius#21775 - Workshop.codes/Zekk3", "[Discord: dsc.gg/soldier-x]"
-#!define GAME_MODE_DESCRIPTION "● Made by Psyrius\n● Code: ZEKK3\n● v3.2.2\n● RPG, Level up, Buy talents, FFA, Deathmatch\n● Developed since 2020\n● Discord: discord.gg/3MBymdF"
-#!define GAME_MODE_NAME "SOLDIER: X [v3.2.2]"
+#!define TOP_RIGHT_TEXT "Soldier: X [v3.3.0] - Made By Psyrius#21775 - Workshop.codes/Zekk3", "[Discord: dsc.gg/soldier-x]"
+#!define GAME_MODE_DESCRIPTION "● Made by Psyrius\n● Code: ZEKK3\n● v3.3.0\n● RPG, Level up, Buy talents, FFA, Deathmatch\n● Developed since 2020\n● Discord: discord.gg/3MBymdF"
+#!define GAME_MODE_NAME "SOLDIER: X [v3.3.0]"
 
 #!setupTags
 #!include "declarations.opy"
@@ -38,11 +38,13 @@ rule "GENERAL - - - Global Variables":
     */
 
     If_map()
+    #Bot combat vision scan loop (moved here from the removed bot navigation map init)
+    async(bot_combat_scan, AsyncBehavior.NOOP)
     createInWorldText(localPlayer if localPlayer.browsing_shop == true else null, "YES {0}                        {1} NO".format(buttonString(Button.PRIMARY_FIRE), buttonString(Button.SECONDARY_FIRE)) if localPlayer.replacing_talent_show_confirmation == true else "{0}            {1}            {2}".format(buttonString(Button.PRIMARY_FIRE) if localPlayer.replacing_talent_show_bought_talents == true else buttonString(Button.PRIMARY_FIRE) if localPlayer.selected_talent_in_shop >= 1 else "    ", buttonString(Button.INTERACT), buttonString(Button.SECONDARY_FIRE) if localPlayer.replacing_talent_show_bought_talents == true else buttonString(Button.SECONDARY_FIRE) if localPlayer.selected_talent_in_shop <= 1 else "    "), localPlayer.selected_talent_position + vect(0, -0.375, 0), 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
     async(create_talent_hud_texts, AsyncBehavior.NOOP)
     async(create_talent_helpers, AsyncBehavior.NOOP)
     #Additional Talent Descriptions
-    createInWorldText(localPlayer if localPlayer.browsing_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, "{0}".format(additional_information[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) if localPlayer.isHoldingButton(Button.JUMP) else "Hold {0} for more information...".format(buttonString(Button.JUMP)), localPlayer.selected_talent_position + vect(0, -1.25, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE if localPlayer.isHoldingButton(Button.JUMP) else Color.GRAY, SpecVisibility.DEFAULT)
+    createInWorldText(localPlayer if localPlayer.browsing_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, ("Alternative input trigger: {0}".format(buttonString(Button.JUMP)) if localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop] == [Talent.JETPACK] else "{0}".format(additional_information[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]])) if localPlayer.isHoldingButton(Button.JUMP) else "Hold {0} for more information...".format(buttonString(Button.JUMP)), localPlayer.selected_talent_position + vect(0, -1.25, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE if localPlayer.isHoldingButton(Button.JUMP) else Color.GRAY, SpecVisibility.DEFAULT)
     #Talent Information Unique
     createInWorldText(localPlayer if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents and is_talent_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] else null, "[Unique]: {0} Can not be learned after learning {1}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) if len(talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) == 1 else "[Unique]: {0} and {1} Can not be learned after learning {2}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]][1]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.5, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
     #Talent Information Expand Mind
@@ -262,7 +264,6 @@ def If_map():
     @Name "GENERAL - - - [SUBROUTINE] if Map"
     
     if getCurrentMap() == Map.EICHENWALDE or getCurrentMap() == Map.EICHENWALDE_HALLOWEEN:
-        map_eichenwalde()
         dummy_bot_spawn_position = vect(99.42, 13.121, -71.747)
         dummy_bot_spawn_facing = vect(99.42, 13.121, -71.747)
         shop_location = vect(13.219, 5.89, -49.768)
@@ -270,7 +271,6 @@ def If_map():
         shop_talent_positions[1] = vect(13.174, 8.287, -44.887)
         shop_talent_positions[2] = vect(10.425, 8.09, -44.999)
     elif getCurrentMap() == Map.BLACK_FOREST or getCurrentMap() == Map.BLACK_FOREST_WINTER:
-        map_black_forest()
         dummy_bot_spawn_position = vect(-25.204, 12.546, 3.92)
         dummy_bot_spawn_facing = vect(-19.306, 13.739, 3.922)
         shop_location = vect(-33.308, 4.599, 1.094)
@@ -278,7 +278,6 @@ def If_map():
         shop_talent_positions[1] = vect(-38.063, 6.77, -0.092)
         shop_talent_positions[2] = vect(-36.726, 6.549, -2.176)
     elif getCurrentMap() == Map.HOLLYWOOD:
-        map_hollywood()
         dummy_bot_spawn_position = vect(28.865, 7.252, -77.34)
         dummy_bot_spawn_facing = vect(28.865, 7.252, -77.34)
         shop_location = vect(-5.95, 4.611, -102.526)
@@ -286,7 +285,6 @@ def If_map():
         shop_talent_positions[1] = vect(-4.132, 5.164, -107.363)
         shop_talent_positions[2] = vect(-1.687, 4.883, -106.065)
     elif getCurrentMap() == Map.ECOPOINT_ANTARCTICA:
-        map_antarctica()
         dummy_bot_spawn_position = vect(-33.601, 9.455, -0.077)
         dummy_bot_spawn_facing = vect(-29.427, 10.582, 0.021)
         shop_location = vect(-11.287, 27.001, 22.31)
@@ -294,7 +292,6 @@ def If_map():
         shop_talent_positions[1] = vect(-16.535, 29.46, 22.783)
         shop_talent_positions[2] = vect(-16.45, 29.219, 19.92)
     elif getCurrentMap() == Map.CHATEAU_GUILLARD or getCurrentMap() == Map.CHATEAU_GUILLARD_HALLOWEEN:
-        map_chateau_guillard()
         dummy_bot_spawn_position = vect(206.444, 15.955, 86.831)
         dummy_bot_spawn_facing = vect(206.444, 15.955, 86.831)
         shop_location = vect(247.531, -0.506, 50.543)
@@ -302,7 +299,6 @@ def If_map():
         shop_talent_positions[1] = vect(252.429, 2.033, 51.359)
         shop_talent_positions[2] = vect(251.716, 1.586, 53.944)
     elif getCurrentMap() == Map.KINGS_ROW or getCurrentMap() == Map.KINGS_ROW_WINTER:
-        map_kings_row()
         dummy_bot_spawn_position = vect(-95.498, 7.937, -30.638)
         dummy_bot_spawn_facing = vect(-95.498, 7.937, -30.638)
         shop_location = vect(-140.793, 6.939, 22.963)
@@ -310,7 +306,6 @@ def If_map():
         shop_talent_positions[1] = vect(-145.924, 7.492, 23.767)
         shop_talent_positions[2] = vect(-145.762, 7.073, 20.701)
     elif getCurrentMap() == Map.BLIZZ_WORLD or getCurrentMap() == Map.BLIZZ_WORLD_WINTER:
-        map_blizzard_world()
         dummy_bot_spawn_position = vect(-45.778, 4.981, 95.978)
         dummy_bot_spawn_facing = vect(-45.778, 4.981, 95.978)
         shop_location = vect(-140.141, 1.684, 105.206)
@@ -325,7 +320,6 @@ def If_map():
         shop_talent_positions[1] = vect(1.875, 1.631, 14.133)
         shop_talent_positions[2] = vect(4.708, 1.483, 15.417)
     elif getCurrentMap() == Map.NECROPOLIS:
-        map_necropolis()
         dummy_bot_spawn_position = vect(-27.407, 9.455, -0.003)
         dummy_bot_spawn_facing = vect(-27.407, 9.455, -0.003)
         shop_location = vect(42.975, 8.571, -0.079)
@@ -333,7 +327,6 @@ def If_map():
         shop_talent_positions[1] = vect(48.006, 9.655, -1.553)
         shop_talent_positions[2] = vect(48.256, 9.406, 1.45)
     elif getCurrentMap() == Map.PETRA:
-        map_petra()
         dummy_bot_spawn_position = vect(43.642, 13.747, 33.965)
         dummy_bot_spawn_facing = vect(43.642, 13.747, 33.965)
         shop_location = vect(-52.288, -18.045, 5.863)
@@ -341,7 +334,6 @@ def If_map():
         shop_talent_positions[1] = vect(-57.335, -16.73, 5.903)
         shop_talent_positions[2] = vect(-56.46, -16.67, 2.626)
     elif getCurrentMap() == Map.KANEZAKA:
-        map_kanezaka()
         dummy_bot_spawn_position = vect(-8.115, 6.507, -38.928)
         dummy_bot_spawn_facing = vect(-8.115, 6.507, -38.928)
         shop_location = vect(-22.798, 23.978, 54.659)
@@ -377,7 +369,6 @@ def If_map():
         shop_talent_positions[1] = vect(-42.443, 20.629, -96.138)
         shop_talent_positions[2] = vect(-42.719, 20.427, -98.671)
     elif getCurrentMap() == Map.PARIS:
-        map_paris()
         dummy_bot_spawn_position = vect(-15.892, 11.764, -28.584)
         dummy_bot_spawn_facing = vect(-15.892, 11.765, -28.584)
         shop_location = vect(-57.281, 15, 16.922)
@@ -399,7 +390,6 @@ def If_map():
         shop_talent_positions[1] = vect(35.005, 1.942, 136.165)
         shop_talent_positions[2] = vect(34.623, 1.742, 139)
     elif getCurrentMap() == Map.MALEVENTO:
-        map_malevento()
         dummy_bot_spawn_position = vect(19.218, 9.455, 36.238)
         dummy_bot_spawn_facing = vect(19.218, 9.455, 36.238)
         shop_location = vect(-37.854, -3.482, 27.558)
@@ -414,6 +404,8 @@ def create_talent_hud_texts():
     hudText(getAllPlayers(), null, TOP_RIGHT_TEXT, HudPosition.RIGHT, 0, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     #hudText(getAllPlayers(), null, "", "[More info: workshop.codes/ZEKK3]", HudPosition.RIGHT, 1, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     hudSubheader(localPlayer if localPlayer.can_enter_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, "[Hold: {0} to use Hearthstone]".format(buttonString(Button.RELOAD)) if localPlayer.browsing_shop == false else "[Hold: {0} to skip a talent, exit shop and get a XP boost]".format(buttonString(Button.RELOAD)) if localPlayer.browsing_shop == true else "", HudPosition.TOP, 2, Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+    #Grim Reaper cancel hint, shown under the casting progress bar while casting
+    hudSubheader(localPlayer if localPlayer.is_using_ability[Talent.GRIM_REAPER] == true and localPlayer.casting_success == false else null, "{0} = Cancel".format(buttonString(Button.INTERACT)), HudPosition.TOP, 3, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.NEVER)
 
 def create_talent_helpers():
     @Name "GENERAL - - - [SUBROUTINE] Create Cooldown Ready Icons"
@@ -443,7 +435,7 @@ def create_talent_helpers():
         if localPlayer.is_using_ability[Talent.BANDAGE] == true
     /*else "{0} {1} = Cancel".format('<tx0C0000000004F741>', buttonString(Button.INTERACT))
         if localPlayer.is_using_ability[Talent.GRIM_REAPER] == true and localPlayer.casting_success == false*/
-    else ""), 
+    else ""),
     updateEveryTick(localPlayer.getEyePosition() + (100 * (1.625 * worldVector(Vector.RIGHT, localPlayer, Transform.ROTATION) + (-0.2 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90))) + 3 * localPlayer.getFacingDirection()))), 1.25, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
     
     #Railgun Cooldown / Charge
@@ -487,8 +479,11 @@ rule "GENERAL - - - [EACH PLAYER] Has Spawned":
         #Gigachad
         eventPlayer.setKnockbackReceived(eventPlayer.stats[Stat.KNOCKBACK_RECEIVED])
     eventPlayer.setMaxHealth(eventPlayer.stats[Stat.HEALTH])
-    eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
     eventPlayer.hit_by_talent[Talent.CRYOGENICS] = null
+    if eventPlayer.isDummy():
+        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
+    else:
+        recalculate_player_speed()
     #wait is needed to see if max health is upgraded first
     wait()
     heal(eventPlayer, null, eventPlayer.getMaxHealth())
@@ -552,20 +547,14 @@ rule "GENERAL - - - Player Died":
             eventPlayer.addToScore(1)
     elif spawn_bots:
         #--- Bot death logic (merged from BOT - - - Died) ---
-        eventPlayer.pathfinder_path = []
-        eventPlayer.pathfinder_reconstructing = false
         eventPlayer.bot_combat_target = null
         eventPlayer.bot_combat_awareness_start = 0
         eventPlayer.stopForcingButton(Button.PRIMARY_FIRE)
         eventPlayer.bot_state_id = BotState.DEAD
         eventPlayer.debug_bot_state = "DEAD"
         eventPlayer.bot_throttle_paused = true
-        eventPlayer.bot_strafe = 0
-        if pathfinder_owner == eventPlayer:
-            pathfinder_owner = null
         waitUntil(eventPlayer.isAlive() and eventPlayer.hasSpawned(), 99999)
         wait(BOT_RESPAWN_WAIT)
-        eventPlayer.bot_off_network = true
         eventPlayer.bot_state_id = BotState.IDLE
 
 
@@ -715,7 +704,7 @@ rule "GENERAL - - - Player Slowed (Hit by Cryogenics Talent)":
     else:
         recalculate_player_speed()
     #if eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] == 0:
-    eventPlayer.setAbility1Enabled(true)
+    restore_ability1()
     eventPlayer.cryogenics_slow_duration = 0
 
 def which_players_have_grim_reaper():
@@ -731,6 +720,16 @@ def which_players_have_grim_reaper():
     #NEW GRIM REAPER
     players_with_grim_reaper = [player for player in getAllPlayers() if player.talent_ranks[Talent.GRIM_REAPER] > 0]
 
+def restore_ability1():
+    @Name "GENERAL - - - [SUBROUTINE] Restore Ability 1 (sprint stays disabled for Jetpack owners)"
+
+    #Jetpack repurposes Ability 1 as the flight button and replaces sprint with a passive ground-speed boost,
+    #so any state that would normally re-grant sprint must keep Ability 1 disabled for Jetpack owners.
+    if eventPlayer.talent_ranks[Talent.JETPACK] > 0:
+        eventPlayer.setAbility1Enabled(false)
+    else:
+        eventPlayer.setAbility1Enabled(true)
+
 def recalculate_player_speed():
     @Name "Subroutine: Recalculate Player Speed"
 
@@ -742,7 +741,11 @@ def recalculate_player_speed():
         eventPlayer.stats[Stat.SPEED] = 100
 
     if eventPlayer.hit_by_talent[Talent.CRYOGENICS] == null:
-        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
+        #Jetpack owners trade sprint for a passive 125% ground-speed boost (not while actively flying or in a reduced-speed state)
+        if eventPlayer.talent_ranks[Talent.JETPACK] > 0 and eventPlayer.is_using_ability[Talent.JETPACK] == false and eventPlayer.stats[Stat.SPEED] == 100:
+            eventPlayer.setMoveSpeed(125 * eventPlayer.adrenaline_rush_value / 100)
+        else:
+            eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
         
 
 rule "GENERAL - - - Restore Speed When No Slow Active":

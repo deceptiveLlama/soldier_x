@@ -108,18 +108,12 @@ rule "TALENT SYSTEM - - - [TALENT 1: PURITY FIELD] Use Purity Field":
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
     @Condition eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] + talent_base_cooldowns[Talent.PURITY_FIELD] <= eventPlayer.totalTimeElapsed
-    @Condition eventPlayer.isHoldingButton(Button.CROUCH) == true
+    @Condition eventPlayer.isHoldingButton(Button.ULTIMATE) == true
     #@Condition eventPlayer.is_using_ability[Talent.GUNSLINGER] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition eventPlayer.railgun_charge == 0
     
-    waitUntil(not eventPlayer.isHoldingButton(Button.CROUCH), 0.25)
-    if eventPlayer.isHoldingButton(Button.CROUCH):
-        return
-    waitUntil(eventPlayer.isHoldingButton(Button.CROUCH), 0.25)
-    if not eventPlayer.isHoldingButton(Button.CROUCH):
-        return
     eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] = eventPlayer.totalTimeElapsed
     eventPlayer.is_using_ability[Talent.PURITY_FIELD] = true
     eventPlayer.purity_field_duration = 100
@@ -409,14 +403,14 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     eventPlayer.setJumpEnabled(true)
     eventPlayer.setMeleeEnabled(true)
     lbl_0:
-    eventPlayer.setAbility1Enabled(true)
+    restore_ability1()
     eventPlayer.stopCamera()
     eventPlayer.setCrouchEnabled(true)
     eventPlayer.stopFacing()
     stopChasingVariable(eventPlayer.juggernaut_charge)
     eventPlayer.juggernaut_charge = 0
     eventPlayer.is_using_ability[Talent.JUGGERNAUT] = false
-    eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
+    recalculate_player_speed()
     eventPlayer.stopForcingThrottle()
     eventPlayer.setPrimaryFireEnabled(true)
     if eventPlayer.talent_ranks[Talent.RAILGUN] == 0:
@@ -849,9 +843,12 @@ rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Use Jetpack":
     @Condition eventPlayer.is_using_ability[Talent.SHADOWSTEP] == false
     @Condition not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success)
     @Condition eventPlayer.has_hit_the_ground == true
-    @Condition eventPlayer.isHoldingButton(Button.JUMP) == true
+    @Condition (eventPlayer.isHoldingButton(Button.ABILITY_1) or eventPlayer.isHoldingButton(Button.JUMP)) == true
     #@Condition (eventPlayer.getCurrentHero() == Hero.SOLDIER or eventPlayer.getCurrentHero() == Hero.BRIGITTE) == true
     
+    #On the ground, do a real jump first; the delay below keeps a quick tap a normal jump while a held press becomes flight
+    if eventPlayer.isOnGround() and not eventPlayer.isHoldingButton(Button.JUMP):
+        eventPlayer.forceButtonPress(Button.JUMP)
     if eventPlayer.jetpack_will_have_a_delay == true:
         wait(0.25, Wait.ABORT_WHEN_FALSE)
         eventPlayer.jetpack_will_have_a_delay = false
@@ -859,11 +856,13 @@ rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Use Jetpack":
     eventPlayer.stopForcingButton(Button.ABILITY_1)
     eventPlayer.setAbility1Enabled(false)
     eventPlayer.is_using_ability[Talent.JETPACK] = true
-    waitUntil(not eventPlayer.isHoldingButton(Button.JUMP) or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.jetpack_fuel == 0 or eventPlayer.is_using_ability[Talent.DIVE_BOMB], 9999)
+    #Remove the passive ground-speed boost while flying
+    recalculate_player_speed()
+    waitUntil((not eventPlayer.isHoldingButton(Button.ABILITY_1) and not eventPlayer.isHoldingButton(Button.JUMP)) or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.jetpack_fuel == 0 or eventPlayer.is_using_ability[Talent.DIVE_BOMB], 9999)
     eventPlayer.is_using_ability[Talent.JETPACK] = false
-    #if eventPlayer.getCurrentHero() == Hero.SOLDIER:
-    if eventPlayer.is_using_ability[Talent.CRYOGENICS] == false/* and eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] == 0*/:
-        eventPlayer.setAbility1Enabled(true)
+    #Jetpack owner: keep sprint disabled and restore the passive ground-speed boost now that flight has ended
+    restore_ability1()
+    recalculate_player_speed()
 
 /*
 rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Jetpack Effects":
@@ -1480,7 +1479,7 @@ def resume_player_input():
     if eventPlayer.talent_ranks[Talent.RAILGUN] == 0:
         eventPlayer.setSecondaryFireEnabled(true)
     #if eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] == 0:
-    eventPlayer.setAbility1Enabled(true)
+    restore_ability1()
     eventPlayer.setMeleeEnabled(true)
     eventPlayer.setJumpEnabled(true)
     eventPlayer.clearStatusEffect(Status.ROOTED)
@@ -1519,7 +1518,13 @@ def casting_cancelled():
     
     # CASTING GRIM REAPER
     elif eventPlayer.is_using_ability[Talent.GRIM_REAPER] == true:
+        #Tap to cast, tap again to cancel: first wait for the activation press to release so it isn't read as the cancel press
         waitUntil(not eventPlayer.isHoldingButton(Button.INTERACT) or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) or eventPlayer.casting_success or eventPlayer.grim_reaper_target.isDead() or not entityExists(eventPlayer.grim_reaper_target), GRIM_REAPER_CAST_TIME)
+
+        if eventPlayer.casting_success == true:
+            return
+        #A fresh press of Interact now cancels the cast (it runs hands-free until then)
+        waitUntil(eventPlayer.isHoldingButton(Button.INTERACT) or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) or eventPlayer.casting_success or eventPlayer.grim_reaper_target.isDead() or not entityExists(eventPlayer.grim_reaper_target), GRIM_REAPER_CAST_TIME)
         
         if eventPlayer.casting_success == true:
             return
@@ -1532,7 +1537,7 @@ def casting_cancelled():
             eventPlayer.setSecondaryFireEnabled(true)
         eventPlayer.setMeleeEnabled(true)
         #if eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] == 0:
-        eventPlayer.setAbility1Enabled(true)
+        restore_ability1()
     eventPlayer.stopFacing()
     if eventPlayer.browsing_shop == false:
         eventPlayer.stopCamera()

@@ -57,8 +57,7 @@ settings {
                 "ultGen%": 10
             },
             "enabledHeroes": [
-                "soldier",
-                "reaper"
+                "soldier"
             ],
             "general": {
                 # Due to a bug the following is false

@@ -563,11 +563,15 @@ def buy_purity_field():
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
         eventPlayer.talents_you_do_not_have.append(Talent.PURITY_FIELD)
+        #Group A exclusivity: removing Purity Field frees the Ultimate button, so Berserker becomes available again
+        eventPlayer.talents_you_do_not_have.append(Talent.BERSERKER)
         stopChasingVariable(eventPlayer.purity_field_duration)
         eventPlayer.purity_field_duration = 0
         return
     if eventPlayer.talent_ranks[Talent.PURITY_FIELD] == 1:
         eventPlayer.talents_you_do_not_have.remove(Talent.PURITY_FIELD)
+        #Group A exclusivity: Purity Field and Berserker share the Ultimate button, so owning one removes the other from the pool
+        eventPlayer.talents_you_do_not_have.remove(Talent.BERSERKER)
         eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.PURITY_FIELD]
 
 def buy_cybernetics():
@@ -736,11 +740,15 @@ def buy_grim_reaper():
     if eventPlayer.replacing_talent_show_bought_talents == true:
         eventPlayer.talents_you_do_not_have.append(Talent.GRIM_REAPER)
         eventPlayer.talents_you_do_not_have.append(Talent.FIREBALL)
+        #Group B exclusivity: re-add Juggernaut here when it is re-enabled (kept commented while Juggernaut is disabled, to avoid offering an unbuyable talent)
+        #eventPlayer.talents_you_do_not_have.append(Talent.JUGGERNAUT)
         return
     if eventPlayer.talent_ranks[Talent.GRIM_REAPER] == 1:
         eventPlayer.talent_trigger_times[Talent.GRIM_REAPER] = -talent_base_cooldowns[Talent.GRIM_REAPER]
         eventPlayer.talents_you_do_not_have.remove(Talent.GRIM_REAPER)
         eventPlayer.talents_you_do_not_have.remove(Talent.FIREBALL)
+        #Group B exclusivity: harmless no-op while Juggernaut is disabled; keeps it out of the pool once re-enabled (mirrors buy_fireball)
+        eventPlayer.talents_you_do_not_have.remove(Talent.JUGGERNAUT)
     if eventPlayer.talent_ranks[Talent.GRIM_REAPER] > 1:
 
     /*
@@ -900,6 +908,8 @@ def buy_berserker():
             return
         eventPlayer.talents_you_do_not_have.append(Talent.BERSERKER)
         eventPlayer.talents_you_do_not_have.remove(Talent.BLOODTHIRST)
+        #Group A exclusivity: removing Berserker frees the Ultimate button, so Purity Field becomes available again
+        eventPlayer.talents_you_do_not_have.append(Talent.PURITY_FIELD)
         destroyEffect(eventPlayer.berserker_team1_effect_id)
         destroyEffect(eventPlayer.berserker_team2_effect_id)
         destroyEffect(eventPlayer.berserker_sound_id)
@@ -915,6 +925,8 @@ def buy_berserker():
         createEffect(getAllPlayers() if eventPlayer.is_using_ability[Talent.BERSERKER] == true else null, Effect.WINSTON_PRIMAL_RAGE_SOUND, Color.WHITE, eventPlayer, 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
         eventPlayer.berserker_sound_id = getLastCreatedEntity()
         eventPlayer.talents_you_do_not_have.remove(Talent.BERSERKER)
+        #Group A exclusivity: Berserker and Purity Field share the Ultimate button, so owning one removes the other from the pool
+        eventPlayer.talents_you_do_not_have.remove(Talent.PURITY_FIELD)
         eventPlayer.talents_you_do_not_have.append(Talent.BLOODTHIRST)
 
 def buy_fireball():

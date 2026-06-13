@@ -66,14 +66,6 @@ globalvar player_picking_up_orb
 globalvar spawn_bots = createWorkshopSettingBool("01. Bots", "Spawn bots?", true, 0)
 globalvar amount_of_bots_and_players = createWorkshopSettingInt("01. Bots", "How many bots and players?", 8, 1, 8, 1)
 globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", false, 1)
-globalvar pathfinder_owner = null
-globalvar pathfinder_budget = 1
-globalvar map_nodes = []
-globalvar map_attributes_raw = []
-globalvar map_flat_neighbors = []
-globalvar map_temp_neighbors = []
-globalvar map_encoded = false
-globalvar map_ready = false
 
 #--- Shop system (multi-file) ---
 globalvar shop_location
@@ -134,7 +126,6 @@ playervar dpstracking_damage
 playervar dpstracking_textID
 playervar dpstracking_position*/
 playervar i
-playervar bot_loop_var
 playervar rockets_cooldown
 playervar totalTimeElapsed
 playervar variable
@@ -231,15 +222,11 @@ playervar current_dive_bomb_target = 0
 #!defineMember victims_in_dive_bomb_radius variable[36]
 #!defineMember dive_bomb_damage_total variable[37]
 #!defineMember bot_throttle_paused variable[38]
-#!defineMember bot_edge_attr variable[39]
-#!defineMember bot_strafe variable[40]
 #!defineMember debug_bot_state variable[41]
-#!defineMember debug_bot_stuck variable[42]
 
 #--- Shared global defineMember (global_variable[0-49]) ---
 
 #!defineMember highest_grim_reaper_rank_in_match global_variable[0]
-#!defineMember debug_bot_walk_fail_pos global_variable[1]
 
 #Subroutine names
 subroutine buy_debug_talents
@@ -255,23 +242,12 @@ subroutine If_map
 /*subroutine juggernaut_effects
 subroutine juggernaut_impulse_sound_cd
 subroutine juggernaut_knockback*/
-subroutine map_antarctica
-subroutine map_black_forest
-subroutine map_blizzard_world
-subroutine map_chateau_guillard
-subroutine map_eichenwalde
-subroutine map_hollywood
-subroutine map_kanezaka
-subroutine map_kings_row
-subroutine map_malevento
-subroutine map_necropolis
-subroutine map_paris
-subroutine map_petra
 subroutine replace_talent
 subroutine spawned_with_fireball
 subroutine stopped_using_hearthstone
 subroutine using_one_of_the_hearthstones
 subroutine recalculate_player_speed
+subroutine restore_ability1
 subroutine which_players_have_grim_reaper
 subroutine grim_reaper_casted
 subroutine casting

@@ -13,9 +13,9 @@ rule "DEBUG - - - Init Release Settings":
     debug_damage_text = createWorkshopSettingBool("02. Testing", "Damage Text", false, 3)
     faster_testing = createWorkshopSettingBool("02. Testing", "Faster Testing", false, 1)
 
-rule "DEBUG (For Spectator Only)":
+#rule "DEBUG (For Spectator Only)":
 
-    hudText(hostPlayer, "Srv Load: {0} {1} {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), "Real Avg: Init: {0} | First Min: {1} | Last 10s: {2}".format(debug_srv_load_avg_init, debug_srv_load_avg, debug_srv_load_avg_10s), "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), HudPosition.ACTUALLY_LEFT, 0, Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN if getAverageServerLoad() < 100 else null, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
+    #hudText(hostPlayer, "Srv Load: {0} {1} {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), "Real Avg: Init: {0} | First Min: {1} | Last 10s: {2}".format(debug_srv_load_avg_init, debug_srv_load_avg, debug_srv_load_avg_10s), "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), HudPosition.ACTUALLY_LEFT, 0, Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN if getAverageServerLoad() < 100 else null, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
 
 
 rule "DEBUG - - - Real Server Load Average":
