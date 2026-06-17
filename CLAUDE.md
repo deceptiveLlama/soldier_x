@@ -77,6 +77,7 @@
 - Always explain proposed changes before making them.
 - Wait for confirmation before editing files.
 - Always suggest additions to this claude.md file when conversations reveal information that would improve future communication.
+- Don't comment what the code does — names and structure should show that. Only comment a genuinely non-obvious why (a gotcha, workaround, or subtle reason). No inline/end-of-line explanation comments. Short #--- Section --- headers are fine. When unsure, leave it out.
 
 ## Resources
 - Analyze (whenever needed) "OverPy ReadMe - Syntax - Functions - Tips and Tricks.pdf" for OverPy syntax, functions, and tips and tricks.

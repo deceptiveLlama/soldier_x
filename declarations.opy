@@ -68,8 +68,16 @@ globalvar amount_of_bots_and_players = createWorkshopSettingInt("01. Bots", "How
 globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", false, 1)
 
 #--- Shop system (multi-file) ---
+#Shop placement is driven per map (in If_map) by two values: shop_location (camera spot) and
+#shop_rotation (horizontal facing angle, degrees). The three talent positions are derived from
+#these plus the arc constants below — tweak a constant here to reshape every map's shop at once.
 globalvar shop_location
+globalvar shop_rotation
 globalvar shop_talent_positions
+macro SHOP_TALENT_SPREAD = 31           #degrees each side talent (index 0 = left, 2 = right) sits from the center talent
+macro SHOP_TALENT_RADIUS = 5.4          #meters from the camera (shop_location) out to each talent
+macro SHOP_TALENT_ELEVATION = 0      #degrees ALL three talents sit above the camera's eye line
+macro SHOP_TALENT_MIDDLE_ELEVATION = 4  #EXTRA degrees the middle talent (index 1) sits above the side talents
 globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 536, 589, 648, 713, 785, 863, 949, 1044, 1149, 1264, 1390, 1529, 1682, 1850, 2035, 2239, 2462, 2709]
 playervar talent_trigger_times
 playervar railgun_charge
@@ -78,6 +86,9 @@ playervar railgun_charge
 globalvar debug_spectator_tools
 globalvar debug_damage_text
 globalvar debug_texts = []
+playervar debug_cooldown_capture
+playervar debug_cd_end
+playervar debug_cd_sample_i
 
 #--- Testing ---
 globalvar faster_testing
@@ -133,6 +144,7 @@ playervar amount_of_health_potions
 playervar amount_of_talents_purchased = 0
 playervar bought_talents = []
 playervar browsing_shop
+playervar using_gamepad = false   #detected once on shop entry: true = gamepad, false = keyboard/mouse
 playervar can_enter_shop = false
 #playervar poison_vials_cloudData
 #playervar dropped_xp_orb
@@ -222,7 +234,6 @@ playervar current_dive_bomb_target = 0
 #!defineMember victims_in_dive_bomb_radius variable[36]
 #!defineMember dive_bomb_damage_total variable[37]
 #!defineMember bot_throttle_paused variable[38]
-#!defineMember debug_bot_state variable[41]
 
 #--- Shared global defineMember (global_variable[0-49]) ---
 
@@ -249,6 +260,7 @@ subroutine using_one_of_the_hearthstones
 subroutine recalculate_player_speed
 subroutine restore_ability1
 subroutine which_players_have_grim_reaper
+subroutine detect_input_device
 subroutine grim_reaper_casted
 subroutine casting
 subroutine block_player_input

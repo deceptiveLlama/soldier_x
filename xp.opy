@@ -115,7 +115,7 @@ def activate_xp_boost():
 
     eventPlayer.xp_boost_is_active = true
     chase(eventPlayer.experience_current, eventPlayer.experience_max, rate=eventPlayer.experience_max / 60, ChaseReeval.DESTINATION_AND_RATE)
-    waitUntil(eventPlayer.skipped_a_talent == false and eventPlayer.amount_of_talents_purchased > 0 and eventPlayer.amount_of_talents_purchased < 25 and eventPlayer.amount_of_talents_purchased > (player_with_most_talents.amount_of_talents_purchased - 5), 99999)
+    waitUntil((eventPlayer.skipped_a_talent == false and eventPlayer.amount_of_talents_purchased > 0 and eventPlayer.amount_of_talents_purchased < 25 and eventPlayer.amount_of_talents_purchased > (player_with_most_talents.amount_of_talents_purchased - 5)) or eventPlayer.xp_boost_is_active == false, 99999)
     eventPlayer.xp_boost_is_active = false
     stopChasingVariable(eventPlayer.experience_current)
 

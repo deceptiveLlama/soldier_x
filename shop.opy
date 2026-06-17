@@ -107,8 +107,8 @@ rule "SHOP - - - Skip Talents & Exit Shop":
     @Condition eventPlayer.replacing_talent_show_confirmation == false
     @Condition eventPlayer.replacing_talent_show_bought_talents == false
     @Condition eventPlayer.isHoldingButton(Button.RELOAD) == true
-    @Condition eventPlayer.isHoldingButton(Button.INTERACT) == false
-    
+    @Condition eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT) == false
+
     wait(0.75 if faster_testing == false else 0.425, Wait.ABORT_WHEN_FALSE)
     eventPlayer.is_using_skip_talent = true
     casting()
@@ -118,9 +118,9 @@ rule "SHOP - - - Using Yes":
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.replacing_talent_show_confirmation == true
-    @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == true
-    @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == false
-    
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) == true
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE) == false
+
     wait(0.125, Wait.ABORT_WHEN_FALSE)
     eventPlayer.is_using_vote_yes = true
     casting()
@@ -130,9 +130,9 @@ rule "SHOP - - - Using No":
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.replacing_talent_show_confirmation == true
-    @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == false
-    @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == true
-    
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) == false
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE) == true
+
     wait(0.125, Wait.ABORT_WHEN_FALSE)
     eventPlayer.is_using_vote_no = true
     casting()
@@ -309,12 +309,22 @@ def open_shop():
         #eventPlayer.startCamera(shop_location, shop_talent_positions[1], 0.5)
     playEffect(eventPlayer, DynamicEffect.SYMMETRA_TELEPORTER_REAPPEAR_SOUND, Color.TEAM_1, shop_location.getPosition(), 100)
 
+rule "SHOP - - - Toggle Controller Layout":
+    @Event eachPlayer
+    @Condition not eventPlayer.isDummy()
+    @Condition eventPlayer.browsing_shop == true
+    @Condition eventPlayer.isHoldingButton(Button.ULTIMATE) == true
+
+    eventPlayer.using_gamepad = not eventPlayer.using_gamepad
+    #bigMessage(eventPlayer, "Controller layout: {0}".format("ON" if eventPlayer.using_gamepad else "OFF"))
+    waitUntil(eventPlayer.isHoldingButton(Button.ULTIMATE) == false, 99999)
+
 rule "SHOP - - - Shop Left":
     @Event eachPlayer
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
-    @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == true
-    @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == false
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) == true
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE) == false
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == false
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
@@ -344,8 +354,8 @@ rule "SHOP - - - Shop Right":
     @Event eachPlayer
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
-    @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == true
-    @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == false
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE) == true
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) == false
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == false
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
@@ -376,16 +386,16 @@ rule "SHOP - - - Buy Talent":
     @Condition eventPlayer.browsing_shop == true
     @Condition eventPlayer.using_one_of_the_hearthstones == false
     @Condition eventPlayer.replacing_talent_show_confirmation == false
-    @Condition eventPlayer.isHoldingButton(Button.INTERACT) == true
-    
+    @Condition eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT) == true
+
     if eventPlayer.selected_talent_in_shop == 0:
         eventPlayer.startCamera(shop_talent_positions[0], shop_talent_positions[0], 4.125 if faster_testing == false else 8.25)
     elif eventPlayer.selected_talent_in_shop == 1:
         eventPlayer.startCamera(shop_talent_positions[1], shop_talent_positions[1], 4.125 if faster_testing == false else 8.25)
     elif eventPlayer.selected_talent_in_shop == 2:
         eventPlayer.startCamera(shop_talent_positions[2], shop_talent_positions[2], 4.125 if faster_testing == false else 8.25)
-    waitUntil(not eventPlayer.isHoldingButton(Button.INTERACT) or eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) or eventPlayer.isHoldingButton(Button.SECONDARY_FIRE), 0.85 if faster_testing == false else 0.425)
-    if not eventPlayer.isHoldingButton(Button.INTERACT) or eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) or eventPlayer.isHoldingButton(Button.SECONDARY_FIRE):
+    waitUntil(not eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT) or eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) or eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE), 0.85 if faster_testing == false else 0.425)
+    if not eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT) or eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) or eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE):
         wait(0.25)
         return
     if eventPlayer.replacing_talent_show_bought_talents == true:
@@ -458,6 +468,7 @@ rule "SHOP - - - Buy Talent":
     eventPlayer.experience_max = max_experience_per_level[eventPlayer.amount_of_talents_purchased]
     #if eventPlayer.talent_ranks[Talent.FIREBALL] > 0 or eventPlayer.talent_ranks[Talent.JUGGERNAUT] > 0:
         #async(spawned_with_fireball, AsyncBehavior.RESTART)
+    eventPlayer.debug_cooldown_capture = true
     eventPlayer.is_respawning = true
     eventPlayer.respawn()
     eventPlayer.selected_talent_in_shop = 1
@@ -482,9 +493,9 @@ rule "SHOP - - - Reset Shop Camera":
     @Event eachPlayer
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
-    @Condition eventPlayer.isHoldingButton(Button.INTERACT) == false
-    @Condition (eventPlayer.is_using_skip_talent == true or not eventPlayer.isHoldingButton(Button.INTERACT)) == true
-    
+    @Condition eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT) == false
+    @Condition (eventPlayer.is_using_skip_talent == true or not eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT)) == true
+
     eventPlayer.startCamera(shop_location, eventPlayer.selected_talent_position, 0)
 
 def buy_or_upgrade_talent():

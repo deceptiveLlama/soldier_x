@@ -125,8 +125,6 @@ rule "BOT - - - Init":
     eventPlayer.startThrottleInDirection(directionTowards(eventPlayer.getPosition(), eventPlayer.bot_combat_target.getPosition() if eventPlayer.bot_state_id == BotState.COMBAT else eventPlayer.bot_patrol_destination), 0 if eventPlayer.bot_throttle_paused or (eventPlayer.bot_state_id == BotState.COMBAT and distance(eventPlayer.getPosition(), eventPlayer.bot_combat_target.getPosition()) <= BOT_COMBAT_CLOSE_RANGE) else BOT_PATROL_SPEED, Relativity.TO_WORLD, Throttle.REPLACE_EXISTING, ThrottleReeval.DIRECTION_AND_MAGNITUDE)
 
 
-    eventPlayer.debug_bot_state = "DEAD"
-
     #--- Wait for first spawn, then respawn to get correct eye height ---
     waitUntil(eventPlayer.hasSpawned() and eventPlayer.isAlive() and spawn_bots, 99999)
     wait(BOT_RESPAWN_WAIT)
@@ -156,7 +154,6 @@ def bot_state_machine():
             continue
 
         if eventPlayer.bot_state_id == BotState.IDLE:
-            eventPlayer.debug_bot_state = "IDLE"
             bot_sm_idle()
         elif eventPlayer.bot_state_id == BotState.COMBAT:
             bot_sm_combat()
@@ -192,7 +189,6 @@ def bot_sm_combat():
         return
 
     #--- Reaction time (0.25s if shot, skip if scanned — awareness timer already waited 1s) ---
-    eventPlayer.debug_bot_state = "COMBAT: REACTING"
     eventPlayer.bot_face_target = eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] / 2, 0)
     eventPlayer.bot_throttle_paused = false
     eventPlayer.bot_patrol_destination = eventPlayer.bot_combat_target.getPosition()
@@ -206,7 +202,6 @@ def bot_sm_combat():
 
     #--- Combat teleport: shadow step if target is far and ability is ready ---
     if distance(eventPlayer.getPosition(), eventPlayer.bot_combat_target.getPosition()) >= BOT_COMBAT_TELEPORT_RANGE and eventPlayer.getAbilityCooldown(Button.ABILITY_2) == 0:
-        eventPlayer.debug_bot_state = "COMBAT: TELEPORT"
         eventPlayer.bot_throttle_paused = true
         waitUntil(angleBetweenVectors(eventPlayer.getFacingDirection(), directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_face_target)) < BOT_SHADOW_STEP_AIM_ANGLE or eventPlayer.bot_combat_target == null or eventPlayer.bot_combat_target.isDead() or eventPlayer.isDead(), 2)
         if eventPlayer.bot_combat_target == null or eventPlayer.bot_combat_target.isDead() or eventPlayer.isDead():
@@ -224,7 +219,6 @@ def bot_sm_combat():
             return
 
     #--- Engage: start shooting + walk toward target ---
-    eventPlayer.debug_bot_state = "COMBAT: ENGAGED"
     eventPlayer.startForcingButton(Button.PRIMARY_FIRE)
 
     #--- Stay engaged until LOS lost, target invalid, target too far, or bot dies ---
@@ -260,7 +254,6 @@ def bot_sm_combat():
 def bot_sm_searching():
     @Name "BOT - - - [STATE] Searching"
 
-    eventPlayer.debug_bot_state = "SEARCHING"
     eventPlayer.bot_patrol_destination = eventPlayer.bot_search_destination
     eventPlayer.bot_face_target = eventPlayer.bot_search_destination + vect(0, eventPlayer.stats[Stat.EYE_HEIGHT], 0)
     eventPlayer.bot_throttle_paused = false

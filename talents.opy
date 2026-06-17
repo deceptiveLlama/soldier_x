@@ -580,7 +580,7 @@ rule "TALENT SYSTEM - - - [DIVE BOMB] Use Dive Bomb":
     #playEffect(getAllPlayers(), DynamicEffect.SIGMA_HYPERSPHERE_IMPLOSION, Color.TEAM_2, eventPlayer, 100)
     wait(0.8)
 
-    createProjectileEffect(getAllPlayers(), Projectile.REINHARDT_FIRE_STRIKE, null, updateEveryFrame(eventPlayer.getPosition()), eventPlayer.getVelocity(), 0, ProjectileEffectReeval.POSITION_DIRECTION_AND_SIZE)
+    createEffect(getAllPlayers(), Effect.WRECKING_BALL_PILEDRIVER_FIRE, Color.TEAM_1, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
     eventPlayer.player_temp_effects[0] = getLastCreatedEntity()
 
     chase(eventPlayer.dive_bomb_damage, 2 * DIVE_BOMB_DAMAGE, duration=1, ChaseReeval.DESTINATION_AND_DURATION)
@@ -843,26 +843,22 @@ rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Use Jetpack":
     @Condition eventPlayer.is_using_ability[Talent.SHADOWSTEP] == false
     @Condition not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success)
     @Condition eventPlayer.has_hit_the_ground == true
-    @Condition (eventPlayer.isHoldingButton(Button.ABILITY_1) or eventPlayer.isHoldingButton(Button.JUMP)) == true
-    #@Condition (eventPlayer.getCurrentHero() == Hero.SOLDIER or eventPlayer.getCurrentHero() == Hero.BRIGITTE) == true
-    
-    #On the ground, do a real jump first; the delay below keeps a quick tap a normal jump while a held press becomes flight
-    if eventPlayer.isOnGround() and not eventPlayer.isHoldingButton(Button.JUMP):
-        eventPlayer.forceButtonPress(Button.JUMP)
-    if eventPlayer.jetpack_will_have_a_delay == true:
-        wait(0.25, Wait.ABORT_WHEN_FALSE)
-        eventPlayer.jetpack_will_have_a_delay = false
-    #if eventPlayer.getCurrentHero() == Hero.SOLDIER:
-    eventPlayer.stopForcingButton(Button.ABILITY_1)
-    eventPlayer.setAbility1Enabled(false)
-    eventPlayer.is_using_ability[Talent.JETPACK] = true
-    #Remove the passive ground-speed boost while flying
-    recalculate_player_speed()
-    waitUntil((not eventPlayer.isHoldingButton(Button.ABILITY_1) and not eventPlayer.isHoldingButton(Button.JUMP)) or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.jetpack_fuel == 0 or eventPlayer.is_using_ability[Talent.DIVE_BOMB], 9999)
-    eventPlayer.is_using_ability[Talent.JETPACK] = false
-    #Jetpack owner: keep sprint disabled and restore the passive ground-speed boost now that flight has ended
-    restore_ability1()
-    recalculate_player_speed()
+    @Condition eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.JUMP) == true
+
+    if eventPlayer.using_gamepad == true:
+        if not eventPlayer.isOnGround() and eventPlayer.jetpack_fuel > 0:
+            eventPlayer.is_using_ability[Talent.JETPACK] = true
+            waitUntil(not eventPlayer.isHoldingButton(Button.ABILITY_1) or eventPlayer.isOnGround() or eventPlayer.jetpack_fuel == 0 or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) or eventPlayer.is_using_ability[Talent.DIVE_BOMB] or eventPlayer.browsing_shop, 9999)
+            eventPlayer.is_using_ability[Talent.JETPACK] = false
+        else:
+            waitUntil(not eventPlayer.isHoldingButton(Button.ABILITY_1) or eventPlayer.isDead() or eventPlayer.browsing_shop, 9999)
+    else:
+        if eventPlayer.jetpack_will_have_a_delay == true:
+            wait(0.25, Wait.ABORT_WHEN_FALSE)
+            eventPlayer.jetpack_will_have_a_delay = false
+        eventPlayer.is_using_ability[Talent.JETPACK] = true
+        waitUntil(not eventPlayer.isHoldingButton(Button.JUMP) or eventPlayer.isDead() or eventPlayer.hasStatusEffect(Status.FROZEN) or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) or eventPlayer.jetpack_fuel == 0 or eventPlayer.is_using_ability[Talent.DIVE_BOMB] or eventPlayer.browsing_shop, 9999)
+        eventPlayer.is_using_ability[Talent.JETPACK] = false
 
 /*
 rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Jetpack Effects":
@@ -1329,7 +1325,7 @@ def fireball_casted():
     eventPlayer.fireball_destination = raycast(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + eventPlayer.getFacingDirection() * 1000, getAllPlayers(), eventPlayer, true).getHitPosition()
     eventPlayer.fireball_position = eventPlayer.getEyePosition()
     chaseAtRate(eventPlayer.fireball_position, eventPlayer.fireball_destination, FIREBALL_SPEED, ChaseRateReeval.DESTINATION_AND_RATE)
-    createProjectileEffect(getAllPlayers(), Projectile.PHARAH_ROCKET, getAllPlayers(), eventPlayer.fireball_position, directionTowards(eventPlayer.fireball_position, eventPlayer.fireball_destination), 0, ProjectileEffectReeval.POSITION_DIRECTION_AND_SIZE)
+    createProjectileEffect(getAllPlayers(), Projectile.REINHARDT_FIRE_STRIKE, Color.TEAM_1, eventPlayer.fireball_position, directionTowards(eventPlayer.fireball_position, eventPlayer.fireball_destination), 0, ProjectileEffectReeval.POSITION_DIRECTION_AND_SIZE)
     eventPlayer.fireball_effects[1] = getLastCreatedEntity()
 
     waitUntil(eventPlayer.fireball_position == eventPlayer.fireball_destination or eventPlayer.talent_trigger_times[Talent.FIREBALL] + talent_base_cooldowns[Talent.FIREBALL] <= eventPlayer.totalTimeElapsed or any([player != eventPlayer and player.is_using_ability[Talent.SHADOWSTEP] == false and eventPlayer.fireball_position != null and player.isAlive() and player.browsing_shop == false for player in getPlayersInRadius(eventPlayer.fireball_position.getPosition(), FIREBALL_PROJECTILE_RADIUS, Team.ALL, LosCheck.SURFACES)]) == true, Math.INFINITY)
@@ -1498,20 +1494,20 @@ def casting_cancelled():
             return
     # SKIPPING TALENT
     elif eventPlayer.is_using_skip_talent == true:
-        waitUntil(eventPlayer.isHoldingButton(Button.RELOAD) == false or eventPlayer.isHoldingButton(Button.INTERACT) or eventPlayer.casting_success)
+        waitUntil(eventPlayer.isHoldingButton(Button.RELOAD) == false or eventPlayer.isHoldingButton(Button.JUMP if eventPlayer.using_gamepad else Button.INTERACT) or eventPlayer.casting_success)
 
         if eventPlayer.casting_success == true:
             return
 
     # VOTING YES      
     elif eventPlayer.is_using_vote_yes == true:
-        waitUntil(eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == false or eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) or eventPlayer.casting_success)
+        waitUntil(eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) == false or eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE) or eventPlayer.casting_success)
 
         if eventPlayer.casting_success == true:
             return
     # VOTING NO
     elif eventPlayer.is_using_vote_no == true:
-        waitUntil(eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == false or eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) or eventPlayer.casting_success)
+        waitUntil(eventPlayer.isHoldingButton(Button.ABILITY_2 if eventPlayer.using_gamepad else Button.SECONDARY_FIRE) == false or eventPlayer.isHoldingButton(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.PRIMARY_FIRE) or eventPlayer.casting_success)
 
         if eventPlayer.casting_success == true:
             return

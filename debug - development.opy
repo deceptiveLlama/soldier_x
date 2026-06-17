@@ -1,19 +1,23 @@
 #!mainFile "soldier_x.opy"
 
-#--- Debug global defineMember (global_variable[106-107]) ---
-#!defineMember debug_selected_bot global_variable[106]
-#!defineMember debug_selected_player global_variable[107]
+#--- Fly camera (dev tool) state + tunables ---
+playervar debug_flycam_active = false
+playervar debug_flycam_position
+macro DEBUG_FLYCAM_SPEED = 0.25             #meters moved per tick (~15 m/s at 60 fps)
+macro DEBUG_FLYCAM_BOOST_MULTIPLIER = 4     #speed multiplier while holding Ability 1 (boost)
 
 #--- Workshop Settings (only active when this file is included) ---
 rule "DEBUG - - - Init Workshop Settings":
-    debug_spectator_tools = createWorkshopSettingBool("00. Debug", "Spectator Tools (bot selector, asserts, etc.)", false, 0)
+    debug_spectator_tools = createWorkshopSettingBool("00. Debug", "Spectator Tools (bot selector, asserts, etc.)", true, 0)
 
-#--- Bot state text above each bot (debug only) ---
-rule "DEBUG - - - Bot State Text":
-    @Event eachPlayer
-    @Condition eventPlayer.isDummy() == true
-
-    createInWorldText(getAllPlayers() if debug_spectator_tools else null, ">> Bot{0} {1} <<".format(eventPlayer.getSlot(), eventPlayer.debug_bot_state) if eventPlayer == debug_selected_player else "Bot{0} {1}".format(eventPlayer.getSlot(), eventPlayer.debug_bot_state), updateEveryTick(eventPlayer.getPosition() + vect(0, 2.5, 0)), 1 if eventPlayer == debug_selected_player else 0.75, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
+#--- Element budget + server load readout (host, visible while playing) ---
+rule "DEBUG - - - Element & Load Readout":
+    hudText(hostPlayer, null, \
+        "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), \
+        "Srv Load: {0} | Avg: {1} | Peak: {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), \
+        HudPosition.ACTUALLY_LEFT, 0, \
+        Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN, \
+        Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
 
 /*
 rule "Test":
@@ -199,39 +203,75 @@ rule "DEBUG - - - Clear Assert Texts (Spectator: Move Up + Move Down)":
     waitUntil(hostPlayer.isHoldingButton(Button.INTERACT) == false or hostPlayer.isHoldingButton(Button.ABILITY_1) == false, 99999)
 
 
-rule "DEBUG - - - Bot Selector Init":
+#--- Shop placement helper: fly to a spot, aim where the middle talent should float, copy both values into If_map ---
+#--- Reports the eye position (the actual shop camera point) and the horizontal facing angle ---
+rule "DEBUG - - - Shop Placement Readout":
     @Condition debug_spectator_tools == true
 
-    debug_selected_bot = -1
-    debug_selected_player = null
-
-    #--- HUD: selected bot info (center of screen) ---
-    hudText(hostPlayer, \
-        "Selected: Bot{0} | {1}".format(debug_selected_player.getSlot(), debug_selected_player.debug_bot_state) if debug_selected_player != null else "No bot selected [-1]", \
-        null, null, \
-        HudPosition.TOP, 50, \
-        Color.LIME_GREEN if debug_selected_player != null else Color.WHITE, \
-        Color.WHITE, Color.WHITE, \
-        HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
+    hudText(hostPlayer, null, \
+        "shop_location = vect({0}, {1}, {2})   |   shop_rotation = {3}".format( \
+            round(hostPlayer.getEyePosition().x * 1000) / 1000, \
+            round(hostPlayer.getEyePosition().y * 1000) / 1000, \
+            round(hostPlayer.getEyePosition().z * 1000) / 1000, \
+            round(horizontalAngleOfDirection(hostPlayer.getFacingDirection()))), \
+        null, HudPosition.ACTUALLY_LEFT, 1, Color.ORANGE, Color.ORANGE, Color.ORANGE, \
+        HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
 
 
-rule "DEBUG - - - Select Next Bot (Ctrl+Shift+E)":
+#--- Fly camera: toggle a free-fly noclip on your hero so you can place shops from the air (position/rotation readouts work) ---
+#--- Toggle = Interact + Melee. While flying: Primary = forward (where you look), Secondary = back, Jump = up, Crouch = down, Ability 1 = boost ---
+#--- Primary/Secondary fire are suppressed while flying (still read for thrust); position is forced (so you hover and can still look around) and you are PHASED_OUT (can't die) ---
+def debug_flycam_loop():
+    @Name "DEBUG - - - [SUBROUTINE] Fly Camera Movement"
+
+    #startForcingPosition reevaluates debug_flycam_position every frame, so we only update the variable here (no teleport — teleporting each tick is what locked the camera)
+    while eventPlayer.debug_flycam_active == true:
+        eventPlayer.debug_flycam_position += (eventPlayer.getFacingDirection() * (eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) - eventPlayer.isHoldingButton(Button.SECONDARY_FIRE)) + Vector.UP * (eventPlayer.isHoldingButton(Button.JUMP) - eventPlayer.isHoldingButton(Button.CROUCH))) * DEBUG_FLYCAM_SPEED * (DEBUG_FLYCAM_BOOST_MULTIPLIER if eventPlayer.isHoldingButton(Button.ABILITY_1) == true else 1)
+        wait()
+
+
+rule "DEBUG - - - Toggle Fly Camera (Interact + Melee)":
+    @Event eachPlayer
     @Condition debug_spectator_tools == true
-    @Condition (hostPlayer.isHoldingButton(Button.PRIMARY_FIRE) and hostPlayer.isHoldingButton(Button.SECONDARY_FIRE) and hostPlayer.isHoldingButton(Button.INTERACT)) == true
-    @Condition hostPlayer.isHoldingButton(Button.ABILITY_1) == false
+    @Condition eventPlayer == hostPlayer
+    @Condition eventPlayer.isHoldingButton(Button.INTERACT) == true
+    @Condition eventPlayer.isHoldingButton(Button.MELEE) == true
 
-    debug_selected_bot = min(debug_selected_bot + 1, len([p for p in getAllPlayers() if p.getCurrentHero() == Hero.REAPER]) - 1)
-    debug_selected_player = sorted([p for p in getAllPlayers() if p.getCurrentHero() == Hero.REAPER], lambda p: p.getSlot())[debug_selected_bot] if debug_selected_bot >= 0 else null
+    eventPlayer.debug_flycam_active = not eventPlayer.debug_flycam_active
+    if eventPlayer.debug_flycam_active == true:
+        eventPlayer.debug_flycam_position = eventPlayer.getPosition()
+        eventPlayer.setStatusEffect(null, Status.PHASED_OUT, 9999)
+        eventPlayer.disallowButton(Button.PRIMARY_FIRE)
+        eventPlayer.disallowButton(Button.SECONDARY_FIRE)
+        eventPlayer.startForcingPosition(eventPlayer.debug_flycam_position, true)
+        async(debug_flycam_loop, AsyncBehavior.NOOP)
+    else:
+        eventPlayer.stopForcingPosition()
+        eventPlayer.clearStatusEffect(Status.PHASED_OUT)
+        eventPlayer.allowButton(Button.PRIMARY_FIRE)
+        eventPlayer.allowButton(Button.SECONDARY_FIRE)
+    waitUntil(eventPlayer.isHoldingButton(Button.INTERACT) == false or eventPlayer.isHoldingButton(Button.MELEE) == false, 99999)
 
-    waitUntil(not (hostPlayer.isHoldingButton(Button.PRIMARY_FIRE) and hostPlayer.isHoldingButton(Button.SECONDARY_FIRE) and hostPlayer.isHoldingButton(Button.INTERACT)), 99999)
+
+#--- Cooldown-on-spawn capture (assistant debug): snapshots the just-bought talent's cooldown math across the spawn window after a purchase ---
+#--- tte ~0 climbing while remain stays high => stale per-player clock; ready=False while the ability is usable => stuck @Condition (w_ow2_rule_condition_chase) ---
+def debug_cooldown_snapshot():
+    @Name "DEBUG - - - [SUBROUTINE] Cooldown Spawn Snapshot"
+
+    eventPlayer.debug_cd_end = eventPlayer.talent_trigger_times[eventPlayer.current_talent_replace_or_buy] + talent_base_cooldowns[eventPlayer.current_talent_replace_or_buy] - eventPlayer.talent_ranks[eventPlayer.current_talent_replace_or_buy] * talent_cd_reduction_p_rank[eventPlayer.current_talent_replace_or_buy]
+    hudText(eventPlayer, null, "[t={0}] {1}  trig={2} base={3} tte={4}  remain={5} ready={6} alive={7}".format(evalOnce(round(getTotalTimeElapsed() * 100) / 100), talent_names[eventPlayer.current_talent_replace_or_buy], evalOnce(round(eventPlayer.talent_trigger_times[eventPlayer.current_talent_replace_or_buy] * 100) / 100), talent_base_cooldowns[eventPlayer.current_talent_replace_or_buy], evalOnce(round(eventPlayer.totalTimeElapsed * 100) / 100), evalOnce(round((eventPlayer.debug_cd_end - eventPlayer.totalTimeElapsed) * 100) / 100), evalOnce(eventPlayer.debug_cd_end <= eventPlayer.totalTimeElapsed), evalOnce(eventPlayer.isAlive())), null, HudPosition.ACTUALLY_LEFT, 2, Color.ORANGE, Color.ORANGE, Color.ORANGE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
+    debug_texts.append(getLastCreatedText())
 
 
-rule "DEBUG - - - Select Prev Bot (Ctrl+Shift+Q)":
+rule "DEBUG - - - [Cooldown] Capture Spawn After Purchase":
+    @Event eachPlayer
     @Condition debug_spectator_tools == true
-    @Condition (hostPlayer.isHoldingButton(Button.PRIMARY_FIRE) and hostPlayer.isHoldingButton(Button.SECONDARY_FIRE) and hostPlayer.isHoldingButton(Button.ABILITY_1)) == true
-    @Condition hostPlayer.isHoldingButton(Button.INTERACT) == false
+    @Condition not eventPlayer.isDummy()
+    @Condition eventPlayer.debug_cooldown_capture == true
 
-    debug_selected_bot = max(debug_selected_bot - 1, -1)
-    debug_selected_player = sorted([p for p in getAllPlayers() if p.getCurrentHero() == Hero.REAPER], lambda p: p.getSlot())[debug_selected_bot] if debug_selected_bot >= 0 else null
-
-    waitUntil(not (hostPlayer.isHoldingButton(Button.PRIMARY_FIRE) and hostPlayer.isHoldingButton(Button.SECONDARY_FIRE) and hostPlayer.isHoldingButton(Button.ABILITY_1)), 99999)
+    eventPlayer.debug_cd_sample_i = 0
+    while eventPlayer.debug_cd_sample_i < 10:
+        debug_cooldown_snapshot()
+        wait(0.5)
+        eventPlayer.debug_cd_sample_i += 1
+    eventPlayer.debug_cooldown_capture = false

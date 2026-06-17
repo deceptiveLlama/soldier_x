@@ -1,6 +1,6 @@
-#!define TOP_RIGHT_TEXT "Soldier: X [v3.3.0] - Made By Psyrius#21775 - Workshop.codes/Zekk3", "[Discord: dsc.gg/soldier-x]"
-#!define GAME_MODE_DESCRIPTION "● Made by Psyrius\n● Code: ZEKK3\n● v3.3.0\n● RPG, Level up, Buy talents, FFA, Deathmatch\n● Developed since 2020\n● Discord: discord.gg/3MBymdF"
-#!define GAME_MODE_NAME "SOLDIER: X [v3.3.0]"
+#!define TOP_RIGHT_TEXT "Soldier: X [v3.3.1] - Made By Psyrius#21775 - Workshop.codes/Zekk3", "[Discord: dsc.gg/soldier-x]"
+#!define GAME_MODE_DESCRIPTION "● Made by Psyrius\n● Code: ZEKK3\n● v3.3.1\n● RPG, Level up, Buy talents, FFA, Deathmatch\n● Developed since 2020\n● Discord: discord.gg/3MBymdF"
+#!define GAME_MODE_NAME "SOLDIER: X [v3.3.1]"
 
 #!setupTags
 #!include "declarations.opy"
@@ -8,14 +8,17 @@
 #!include "settings.opy"
 #!include "bots - new system.opy"
 #!include "debug - release.opy"
-##!include "debug - development.opy"
+#!include "debug - development.opy"
 #!include "xp.opy"
 #!include "talents.opy"
 
-#--- Soldier_x-only defineMember (variable[400-402]) ---
+#--- Soldier_x-only defineMember (variable[400-404]) ---
 #!defineMember grim_reaper_cast_sound_id variable[400]
 #!defineMember grim_reaper_effect_id3 variable[401]
 #!defineMember grim_reaper_effect_id4 variable[402]
+#--- Input device auto-detect (runs once on first spawn) ---
+#!defineMember input_device_checked variable[403]
+#!defineMember device_check_facing variable[404]
 
 #--- Local globalvars (only used in this file) ---
 globalvar init_locked = false
@@ -40,17 +43,17 @@ rule "GENERAL - - - Global Variables":
     If_map()
     #Bot combat vision scan loop (moved here from the removed bot navigation map init)
     async(bot_combat_scan, AsyncBehavior.NOOP)
-    createInWorldText(localPlayer if localPlayer.browsing_shop == true else null, "YES {0}                        {1} NO".format(buttonString(Button.PRIMARY_FIRE), buttonString(Button.SECONDARY_FIRE)) if localPlayer.replacing_talent_show_confirmation == true else "{0}            {1}            {2}".format(buttonString(Button.PRIMARY_FIRE) if localPlayer.replacing_talent_show_bought_talents == true else buttonString(Button.PRIMARY_FIRE) if localPlayer.selected_talent_in_shop >= 1 else "    ", buttonString(Button.INTERACT), buttonString(Button.SECONDARY_FIRE) if localPlayer.replacing_talent_show_bought_talents == true else buttonString(Button.SECONDARY_FIRE) if localPlayer.selected_talent_in_shop <= 1 else "    "), localPlayer.selected_talent_position + vect(0, -0.375, 0), 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
+    createInWorldText(localPlayer if localPlayer.browsing_shop == true else null, "YES {0}                        {1} NO".format(buttonString(Button.ABILITY_1 if localPlayer.using_gamepad else Button.PRIMARY_FIRE), buttonString(Button.ABILITY_2 if localPlayer.using_gamepad else Button.SECONDARY_FIRE)) if localPlayer.replacing_talent_show_confirmation == true else "{0}            {1}            {2}".format(buttonString(Button.ABILITY_1 if localPlayer.using_gamepad else Button.PRIMARY_FIRE) if localPlayer.replacing_talent_show_bought_talents == true else buttonString(Button.ABILITY_1 if localPlayer.using_gamepad else Button.PRIMARY_FIRE) if localPlayer.selected_talent_in_shop >= 1 else "    ", buttonString(Button.JUMP if localPlayer.using_gamepad else Button.INTERACT), buttonString(Button.ABILITY_2 if localPlayer.using_gamepad else Button.SECONDARY_FIRE) if localPlayer.replacing_talent_show_bought_talents == true else buttonString(Button.ABILITY_2 if localPlayer.using_gamepad else Button.SECONDARY_FIRE) if localPlayer.selected_talent_in_shop <= 1 else "    "), localPlayer.selected_talent_position + vect(0, -0.125, 0), 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
     async(create_talent_hud_texts, AsyncBehavior.NOOP)
     async(create_talent_helpers, AsyncBehavior.NOOP)
     #Additional Talent Descriptions
-    createInWorldText(localPlayer if localPlayer.browsing_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, ("Alternative input trigger: {0}".format(buttonString(Button.JUMP)) if localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop] == [Talent.JETPACK] else "{0}".format(additional_information[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]])) if localPlayer.isHoldingButton(Button.JUMP) else "Hold {0} for more information...".format(buttonString(Button.JUMP)), localPlayer.selected_talent_position + vect(0, -1.25, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE if localPlayer.isHoldingButton(Button.JUMP) else Color.GRAY, SpecVisibility.DEFAULT)
+    createInWorldText(localPlayer if localPlayer.browsing_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, ("Input trigger: {0}".format(buttonString(Button.ABILITY_1 if localPlayer.using_gamepad else Button.JUMP)) if localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop] == [Talent.JETPACK] else "{0}".format(additional_information[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]])) if localPlayer.isHoldingButton(Button.SECONDARY_FIRE if localPlayer.using_gamepad else Button.JUMP) else "Hold {0} for more information...".format(buttonString(Button.SECONDARY_FIRE if localPlayer.using_gamepad else Button.JUMP)), localPlayer.selected_talent_position + vect(0, -1.25, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE if localPlayer.isHoldingButton(Button.SECONDARY_FIRE if localPlayer.using_gamepad else Button.JUMP) else Color.GRAY, SpecVisibility.DEFAULT)
     #Talent Information Unique
-    createInWorldText(localPlayer if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents and is_talent_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] else null, "[Unique]: {0} Can not be learned after learning {1}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) if len(talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) == 1 else "[Unique]: {0} and {1} Can not be learned after learning {2}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]][1]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.5, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
+    createInWorldText(localPlayer if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.SECONDARY_FIRE if localPlayer.using_gamepad else Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents and is_talent_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] else null, "[Unique]: {0} Can not be learned after learning {1}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) if len(talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]) == 1 else "[Unique]: {0} and {1} Can not be learned after learning {2}".format(talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[talent_information_unique[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]][1]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.5, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
     #Talent Information Expand Mind
-    createInWorldText(localPlayer if localPlayer.browsing_shop and talent_information_expand_mind[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] != null and localPlayer.isHoldingButton(Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents else null, "[Expand Mind]: {0} can appear in shop after learning {1}".format(talent_names[talent_information_expand_mind[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.375, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
+    createInWorldText(localPlayer if localPlayer.browsing_shop and talent_information_expand_mind[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]] != null and localPlayer.isHoldingButton(Button.SECONDARY_FIRE if localPlayer.using_gamepad else Button.JUMP) and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents else null, "[Expand Mind]: {0} can appear in shop after learning {1}".format(talent_names[talent_information_expand_mind[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]], talent_names[localPlayer.talents_offered_in_shop[localPlayer.selected_talent_in_shop]]), localPlayer.selected_talent_position + vect(0, -1.375, 0), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
     #Hearthstone, Grim Reaper, Dive Bomb
-    progressBarHud(localPlayer if localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no or (localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success) or localPlayer.is_using_ability[Talent.DIVE_BOMB] else null, localPlayer.casting_timer / (2.75 if (localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no) and not faster_testing else GRIM_REAPER_CAST_TIME_LOCAL if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else 0.5 if localPlayer.is_using_hearthstone and faster_testing else 0) * 100 if not localPlayer.is_using_ability[Talent.DIVE_BOMB] else ((localPlayer.dive_bomb_damage - DIVE_BOMB_DAMAGE_LOCAL) / DIVE_BOMB_DAMAGE_LOCAL) * 100, "{0} Casting Hearthstone".format(iconString(Icon.SPIRAL)) if localPlayer.is_using_hearthstone and not localPlayer.browsing_shop else "{0} Casting Grim Reaper".format('<tx0C0000000004F741>') if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else "{0} YES".format(iconString(Icon.CHECKMARK)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.PRIMARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} NO".format(iconString(Icon.NO)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.SECONDARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} Skipping Talents For XP Boost".format(iconString(Icon.TRASHCAN)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.RELOAD) else "{0} DAMAGE: {1}".format(abilityIconString(Hero.HAMMOND, Button.CROUCH), round(localPlayer.dive_bomb_damage)) if localPlayer.is_using_ability[Talent.DIVE_BOMB] else "", HudPosition.TOP, 2, Color.GREEN if localPlayer.is_using_hearthstone else Color.RED if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else Color.WHITE if localPlayer.is_using_ability[Talent.DIVE_BOMB] else Color.WHITE, Color.WHITE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.NEVER)
+    progressBarHud(localPlayer if localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no or (localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success) or localPlayer.is_using_ability[Talent.DIVE_BOMB] else null, localPlayer.casting_timer / (2.75 if (localPlayer.is_using_hearthstone or localPlayer.is_using_skip_talent or localPlayer.is_using_vote_yes or localPlayer.is_using_vote_no) and not faster_testing else GRIM_REAPER_CAST_TIME_LOCAL if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else 0.5 if localPlayer.is_using_hearthstone and faster_testing else 0) * 100 if not localPlayer.is_using_ability[Talent.DIVE_BOMB] else ((localPlayer.dive_bomb_damage - DIVE_BOMB_DAMAGE_LOCAL) / DIVE_BOMB_DAMAGE_LOCAL) * 100, "{0} Casting Hearthstone".format(iconString(Icon.SPIRAL)) if localPlayer.is_using_hearthstone and not localPlayer.browsing_shop else "{0} Casting Grim Reaper".format('<tx0C0000000004F741>') if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else "{0} YES".format(iconString(Icon.CHECKMARK)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.ABILITY_1 if localPlayer.using_gamepad else Button.PRIMARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} NO".format(iconString(Icon.NO)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.ABILITY_2 if localPlayer.using_gamepad else Button.SECONDARY_FIRE) and localPlayer.replacing_talent_show_confirmation else "{0} Skipping Talents For XP Boost".format(iconString(Icon.TRASHCAN)) if localPlayer.browsing_shop and localPlayer.isHoldingButton(Button.RELOAD) else "{0} DAMAGE: {1}".format(abilityIconString(Hero.HAMMOND, Button.CROUCH), round(localPlayer.dive_bomb_damage)) if localPlayer.is_using_ability[Talent.DIVE_BOMB] else "", HudPosition.TOP, 2, Color.GREEN if localPlayer.is_using_hearthstone else Color.RED if localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.casting_success else Color.WHITE if localPlayer.is_using_ability[Talent.DIVE_BOMB] else Color.WHITE, Color.WHITE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.NEVER)
 
 rule "GENERAL - - - [EACH PLAYER] INIT":
     @Event eachPlayer
@@ -90,19 +93,19 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
         eventPlayer.selected_bought_talent = 0
         chase(eventPlayer.rockets_cooldown, 0, rate=1, ChaseReeval.DESTINATION_AND_RATE)
         #[HUD Text for talent slot 1]
-        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 1 else null, "{0}".format(talent_names[eventPlayer.bought_talents[0]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[0]] + talent_base_cooldowns[eventPlayer.bought_talents[0]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[0]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[0]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[0]] + talent_base_cooldowns[eventPlayer.bought_talents[0]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[0]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[0]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[0]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH)).replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE))), HudPosition.ACTUALLY_LEFT, 0, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[0]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[0]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 1 else null, "{0}".format(talent_names[eventPlayer.bought_talents[0]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[0]] + talent_base_cooldowns[eventPlayer.bought_talents[0]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[0]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[0]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[0]] + talent_base_cooldowns[eventPlayer.bought_talents[0]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[0]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[0]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[0]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH) if buttonString(Button.CROUCH) != "" else "Crouch").replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE)).replace("[JETPACKBTN]", buttonString(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.JUMP)).replace("[JETPACKAIR]", " (In Air)" if eventPlayer.using_gamepad else "")), HudPosition.ACTUALLY_LEFT, 0, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[0]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[0]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
         wait()
         #[HUD Text for talent slot 2]
-        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 2 else null, "{0}".format(talent_names[eventPlayer.bought_talents[1]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[1]] + talent_base_cooldowns[eventPlayer.bought_talents[1]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[1]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[1]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[1]] + talent_base_cooldowns[eventPlayer.bought_talents[1]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[1]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[1]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[1]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH)).replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE))), HudPosition.ACTUALLY_LEFT, 1, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[1]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[1]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 2 else null, "{0}".format(talent_names[eventPlayer.bought_talents[1]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[1]] + talent_base_cooldowns[eventPlayer.bought_talents[1]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[1]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[1]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[1]] + talent_base_cooldowns[eventPlayer.bought_talents[1]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[1]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[1]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[1]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH) if buttonString(Button.CROUCH) != "" else "Crouch").replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE)).replace("[JETPACKBTN]", buttonString(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.JUMP)).replace("[JETPACKAIR]", " (In Air)" if eventPlayer.using_gamepad else "")), HudPosition.ACTUALLY_LEFT, 1, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[1]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[1]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
         wait()
         #[HUD Text for talent slot 3]
-        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 3 else null, "{0}".format(talent_names[eventPlayer.bought_talents[2]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[2]] + talent_base_cooldowns[eventPlayer.bought_talents[2]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[2]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[2]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[2]] + talent_base_cooldowns[eventPlayer.bought_talents[2]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[2]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[2]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[2]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH)).replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE))), HudPosition.ACTUALLY_LEFT, 2, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[2]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[2]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 3 else null, "{0}".format(talent_names[eventPlayer.bought_talents[2]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[2]] + talent_base_cooldowns[eventPlayer.bought_talents[2]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[2]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[2]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[2]] + talent_base_cooldowns[eventPlayer.bought_talents[2]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[2]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[2]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[2]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH) if buttonString(Button.CROUCH) != "" else "Crouch").replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE)).replace("[JETPACKBTN]", buttonString(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.JUMP)).replace("[JETPACKAIR]", " (In Air)" if eventPlayer.using_gamepad else "")), HudPosition.ACTUALLY_LEFT, 2, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[2]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[2]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
         wait()
         #[HUD Text for talent slot 4]
-        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 4 else null, "{0}".format(talent_names[eventPlayer.bought_talents[3]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[3]] + talent_base_cooldowns[eventPlayer.bought_talents[3]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[3]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[3]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[3]] + talent_base_cooldowns[eventPlayer.bought_talents[3]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[3]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[3]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[3]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH)).replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE))), HudPosition.ACTUALLY_LEFT, 3, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[3]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[3]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 4 else null, "{0}".format(talent_names[eventPlayer.bought_talents[3]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[3]] + talent_base_cooldowns[eventPlayer.bought_talents[3]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[3]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[3]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[3]] + talent_base_cooldowns[eventPlayer.bought_talents[3]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[3]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[3]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[3]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH) if buttonString(Button.CROUCH) != "" else "Crouch").replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE)).replace("[JETPACKBTN]", buttonString(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.JUMP)).replace("[JETPACKAIR]", " (In Air)" if eventPlayer.using_gamepad else "")), HudPosition.ACTUALLY_LEFT, 3, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[3]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[3]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
         wait()
         #[HUD Text for talent slot 5]
-        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 5 else null, "{0}".format(talent_names[eventPlayer.bought_talents[4]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[4]] + talent_base_cooldowns[eventPlayer.bought_talents[4]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[4]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[4]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[4]] + talent_base_cooldowns[eventPlayer.bought_talents[4]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[4]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[4]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[4]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH)).replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE))), HudPosition.ACTUALLY_LEFT, 4, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[4]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[4]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+        hudText(eventPlayer if len(eventPlayer.bought_talents) >= 5 else null, "{0}".format(talent_names[eventPlayer.bought_talents[4]]), "Cooldown: {0}".format(eventPlayer.talent_trigger_times[eventPlayer.bought_talents[4]] + talent_base_cooldowns[eventPlayer.bought_talents[4]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[4]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[4]] - eventPlayer.totalTimeElapsed) if eventPlayer.talent_trigger_times[eventPlayer.bought_talents[4]] + talent_base_cooldowns[eventPlayer.bought_talents[4]] - eventPlayer.talent_ranks[eventPlayer.bought_talents[4]] * talent_cd_reduction_p_rank[eventPlayer.bought_talents[4]] > eventPlayer.totalTimeElapsed else "", "{0}".format(talent_keybinds[eventPlayer.bought_talents[4]].replace("[F]", buttonString(Button.INTERACT)).replace("[R]", buttonString(Button.RELOAD)).replace("[E]", buttonString(Button.ABILITY_2)).replace("[Q]", buttonString(Button.ULTIMATE)).replace("[SHIFT]", buttonString(Button.ABILITY_1)).replace("[CTRL]", buttonString(Button.CROUCH) if buttonString(Button.CROUCH) != "" else "Crouch").replace("[SPACEBAR]", buttonString(Button.JUMP)).replace("[LEFTCLICK]", buttonString(Button.PRIMARY_FIRE)).replace("[RIGHTCLICK]", buttonString(Button.SECONDARY_FIRE)).replace("[MELEE]", buttonString(Button.MELEE)).replace("[JETPACKBTN]", buttonString(Button.ABILITY_1 if eventPlayer.using_gamepad else Button.JUMP)).replace("[JETPACKAIR]", " (In Air)" if eventPlayer.using_gamepad else "")), HudPosition.ACTUALLY_LEFT, 4, talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[4]]], talent_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[4]]], Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
         wait()
         eventPlayer.setAbility2Enabled(false)
         eventPlayer.setUltEnabled(false)
@@ -127,6 +130,8 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
         wait()
         #Right Orb
         createEffect(eventPlayer if eventPlayer.browsing_shop and not eventPlayer.replacing_talent_show_confirmation and not eventPlayer.replacing_talent_show_bought_talents else null, Effect.ORB, orb_rarity_colors[eventPlayer.talent_ranks[eventPlayer.bought_talents[eventPlayer.selected_bought_talent]] - 1] if eventPlayer.replacing_talent_show_bought_talents == true else orb_rarity_colors[eventPlayer.talent_ranks[eventPlayer.talents_offered_in_shop[2]]], shop_talent_positions[2], 1, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
+        #wait()
+        #createInWorldText(eventPlayer if eventPlayer.browsing_shop and not eventPlayer.replacing_talent_show_confirmation and not eventPlayer.replacing_talent_show_bought_talents else null, "{0}{1}{2}".format(('<tx00000000000B>'), ('<tx00000000000B>'), ('<tx00000000000B>')), shop_talent_positions[2] + vect(0, 0.375, 0), 4, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, rgb(255, 255, 255, 128), SpecVisibility.DEFAULT)
         wait()
         #Left Talent
         createInWorldText(eventPlayer if eventPlayer.browsing_shop and not eventPlayer.replacing_talent_show_confirmation and not eventPlayer.replacing_talent_show_bought_talents else null, "{0}".format(talent_names[eventPlayer.talents_offered_in_shop[0]]), shop_talent_positions[0] + vect(0, 0.375, 0), 1.5, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.DEFAULT)
@@ -157,6 +162,12 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
     if debug_damage_text == true:
         createInWorldText(null if localPlayer.recentDamageDealtToSlot[eventPlayer.getSlot()] == 0 or localPlayer == eventPlayer else localPlayer, ceil(localPlayer.recentDamageDealtToSlot[eventPlayer.getSlot()]), eventPlayer, 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING)
     wait()
+
+    #hudHeader(getAllPlayers(), "                  ", HudPosition.LEFT, 4, Color.WHITE, HudReeval.VISIBILITY_AND_STRING)
+
+    #hudHeader(getAllPlayers(), "{0}{1}".format("You are currently us" if [Button.ABILITY_1, Button.ABILITY_2, Button.CROUCH, Button.INTERACT, Button.JUMP, Button.MELEE, Button.PRIMARY_FIRE, Button.RELOAD, Button.SECONDARY_FIRE, Button.ULTIMATE].any(lambda x: inputBindingString(x)[0] and strContains("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&~\"#'{([-|`_\\^@)]=}^$%*,?.;/:>²ÉÈÇÀÙ+¤^ßÜÖÄÑ¡´¿ÒÌСЛП↓←→↑스아좌왼숫우오위空回退大下左暂右上；，向數", inputBindingString(x).charAt(0))) else "You are currently us", "\n\nIs this correct?\nIf not, workshop.cod"), HudPosition.LEFT, 0, Color.WHITE, HudReeval.VISIBILITY_AND_STRING)
+
+
     /*
     createIcon(players_with_grim_reaper[0] if eventPlayer.is_using_ability[Talent.STEALTH] == false and eventPlayer.isAlive() == true and eventPlayer.getNormalizedHealth() <= 0.2 else players_with_grim_reaper[1] if eventPlayer.is_using_ability[Talent.STEALTH] == false and eventPlayer.isAlive() == true and eventPlayer.getNormalizedHealth() <= 0.25 else players_with_grim_reaper[2] if eventPlayer.is_using_ability[Talent.STEALTH] == false and eventPlayer.isAlive() == true and eventPlayer.getNormalizedHealth() <= 0.3 else players_with_grim_reaper[3] if eventPlayer.is_using_ability[Talent.STEALTH] == false and eventPlayer.isAlive() == true and eventPlayer.getNormalizedHealth() <= 0.35 else players_with_grim_reaper[4] if eventPlayer.is_using_ability[Talent.STEALTH] == false and eventPlayer.isAlive() == true and eventPlayer.getNormalizedHealth() <= 0.4 else null, updateEveryTick(eventPlayer.getPosition() + Vector.UP * 0.5), Icon.SKULL, IconReeval.VISIBILITY_AND_POSITION, Color.RED, false)
     */
@@ -266,136 +277,109 @@ def If_map():
     if getCurrentMap() == Map.EICHENWALDE or getCurrentMap() == Map.EICHENWALDE_HALLOWEEN:
         dummy_bot_spawn_position = vect(99.42, 13.121, -71.747)
         dummy_bot_spawn_facing = vect(99.42, 13.121, -71.747)
-        shop_location = vect(13.219, 5.89, -49.768)
-        shop_talent_positions[0] = vect(16.177, 8.003, -45.05)
-        shop_talent_positions[1] = vect(13.174, 8.287, -44.887)
-        shop_talent_positions[2] = vect(10.425, 8.09, -44.999)
+        shop_location = vect(-21.00, 34.15, -84.57)
+        shop_rotation = -88
     elif getCurrentMap() == Map.BLACK_FOREST or getCurrentMap() == Map.BLACK_FOREST_WINTER:
         dummy_bot_spawn_position = vect(-25.204, 12.546, 3.92)
         dummy_bot_spawn_facing = vect(-19.306, 13.739, 3.922)
-        shop_location = vect(-33.308, 4.599, 1.094)
-        shop_talent_positions[0] = vect(-38.288, 6.869, 2.713)
-        shop_talent_positions[1] = vect(-38.063, 6.77, -0.092)
-        shop_talent_positions[2] = vect(-36.726, 6.549, -2.176)
+        shop_location = vect(-32.73, 9.41, 4.67)
+        shop_rotation = -90
     elif getCurrentMap() == Map.HOLLYWOOD:
         dummy_bot_spawn_position = vect(28.865, 7.252, -77.34)
         dummy_bot_spawn_facing = vect(28.865, 7.252, -77.34)
-        shop_location = vect(-5.95, 4.611, -102.526)
-        shop_talent_positions[0] = vect(-7.025, 4.948, -108.214)
-        shop_talent_positions[1] = vect(-4.132, 5.164, -107.363)
-        shop_talent_positions[2] = vect(-1.687, 4.883, -106.065)
+        shop_location = vect(-29.35, 74.00, -103.66)
+        shop_rotation = -170
     elif getCurrentMap() == Map.ECOPOINT_ANTARCTICA:
         dummy_bot_spawn_position = vect(-33.601, 9.455, -0.077)
         dummy_bot_spawn_facing = vect(-29.427, 10.582, 0.021)
-        shop_location = vect(-11.287, 27.001, 22.31)
-        shop_talent_positions[0] = vect(-15.965, 29.219, 25.678)
-        shop_talent_positions[1] = vect(-16.535, 29.46, 22.783)
-        shop_talent_positions[2] = vect(-16.45, 29.219, 19.92)
+        shop_location = vect(-31.22, 53.92, 87.77)
+        shop_rotation = -39
     elif getCurrentMap() == Map.CHATEAU_GUILLARD or getCurrentMap() == Map.CHATEAU_GUILLARD_HALLOWEEN:
         dummy_bot_spawn_position = vect(206.444, 15.955, 86.831)
         dummy_bot_spawn_facing = vect(206.444, 15.955, 86.831)
-        shop_location = vect(247.531, -0.506, 50.543)
-        shop_talent_positions[0] = vect(252.604, 1.63, 48.43)
-        shop_talent_positions[1] = vect(252.429, 2.033, 51.359)
-        shop_talent_positions[2] = vect(251.716, 1.586, 53.944)
+        shop_location = vect(72.62, 5.07, 50.17)
+        shop_rotation = -137
     elif getCurrentMap() == Map.KINGS_ROW or getCurrentMap() == Map.KINGS_ROW_WINTER:
         dummy_bot_spawn_position = vect(-95.498, 7.937, -30.638)
         dummy_bot_spawn_facing = vect(-95.498, 7.937, -30.638)
         shop_location = vect(-140.793, 6.939, 22.963)
-        shop_talent_positions[0] = vect(-144.654, 7.111, 26.609)
-        shop_talent_positions[1] = vect(-145.924, 7.492, 23.767)
-        shop_talent_positions[2] = vect(-145.762, 7.073, 20.701)
+        shop_rotation = -81
     elif getCurrentMap() == Map.BLIZZ_WORLD or getCurrentMap() == Map.BLIZZ_WORLD_WINTER:
         dummy_bot_spawn_position = vect(-45.778, 4.981, 95.978)
         dummy_bot_spawn_facing = vect(-45.778, 4.981, 95.978)
         shop_location = vect(-140.141, 1.684, 105.206)
-        shop_talent_positions[0] = vect(-145.471, 3.066, 106.655)
-        shop_talent_positions[1] = vect(-144.712, 3.141, 103.87)
-        shop_talent_positions[2] = vect(-143.468, 2.792, 101.504)
+        shop_rotation = -106
     elif getCurrentMap() == Map.HANAMURA or getCurrentMap() == Map.HANAMURA_WINTER:
         dummy_bot_spawn_position = vect(11.903, 11.666, 21.966)
         dummy_bot_spawn_facing = vect(11.903, 11.666, 21.966)
         shop_location = vect(1.859, 0.68, 19.337)
-        shop_talent_positions[0] = vect(-1.152, 1.611, 15.181)
-        shop_talent_positions[1] = vect(1.875, 1.631, 14.133)
-        shop_talent_positions[2] = vect(4.708, 1.483, 15.417)
+        shop_rotation = 180
     elif getCurrentMap() == Map.NECROPOLIS:
         dummy_bot_spawn_position = vect(-27.407, 9.455, -0.003)
         dummy_bot_spawn_facing = vect(-27.407, 9.455, -0.003)
-        shop_location = vect(42.975, 8.571, -0.079)
-        shop_talent_positions[0] = vect(46.729, 9.457, -4.042)
-        shop_talent_positions[1] = vect(48.006, 9.655, -1.553)
-        shop_talent_positions[2] = vect(48.256, 9.406, 1.45)
+        shop_location = vect(166.55, 29.53, -0.96)
+        shop_rotation = 90
     elif getCurrentMap() == Map.PETRA:
         dummy_bot_spawn_position = vect(43.642, 13.747, 33.965)
         dummy_bot_spawn_facing = vect(43.642, 13.747, 33.965)
-        shop_location = vect(-52.288, -18.045, 5.863)
-        shop_talent_positions[0] = vect(-56.327, -16.669, 9.215)
-        shop_talent_positions[1] = vect(-57.335, -16.73, 5.903)
-        shop_talent_positions[2] = vect(-56.46, -16.67, 2.626)
+        shop_location = vect(53.86, -8.03, 48.69)
+        shop_rotation = 111
     elif getCurrentMap() == Map.KANEZAKA:
         dummy_bot_spawn_position = vect(-8.115, 6.507, -38.928)
         dummy_bot_spawn_facing = vect(-8.115, 6.507, -38.928)
-        shop_location = vect(-22.798, 23.978, 54.659)
-        shop_talent_positions[0] = vect(-21.18, 24.327, 48.941)
-        shop_talent_positions[1] = vect(-18.936, 24.588, 51.056)
-        shop_talent_positions[2] = vect(-17.535, 24.302, 53.351)
+        shop_location = vect(305.94, 43.70, -110.49)
+        shop_rotation = 99
     elif getCurrentMap() == Map.CASTILLO:
         dummy_bot_spawn_position = vect(-112.424, 33.763, 59.87)
         dummy_bot_spawn_facing = vect(-112.424, 33.763, 59.87)
-        shop_location = vect(-60.288, 22.011, 50.687)
-        shop_talent_positions[0] = vect(-55.86, 22.533, 46.725)
-        shop_talent_positions[1] = vect(-54.774, 22.706, 49.529)
-        shop_talent_positions[2] = vect(-54.935, 22.481, 52.534)
+        shop_location = vect(3.87, 31.11, 149.14)
+        shop_rotation = 63
     elif getCurrentMap() == Map.DORADO:
         dummy_bot_spawn_position = vect(27.568, 4.221, -17.033)
         dummy_bot_spawn_facing = vect(27.568, 4.221, -17.033)
         shop_location = vect(78.814, -7.22, 60.419)
-        shop_talent_positions[0] = vect(78.019, -6.203, 66.255)
-        shop_talent_positions[1] = vect(75.547, -6.043, 64.771)
-        shop_talent_positions[2] = vect(73.356, -6.27, 62.604)
+        shop_rotation = -37
     elif getCurrentMap() == Map.HAVANA:
         dummy_bot_spawn_position = vect(107.152, 2.067, -27.697)
         dummy_bot_spawn_facing = vect(107.152, 2.067, -27.697)
         shop_location = vect(108.634, -6.72, -98.952)
-        shop_talent_positions[0] = vect(109.618, -6.593, -104.188)
-        shop_talent_positions[1] = vect(112.271, -6.455, -103.031)
-        shop_talent_positions[2] = vect(113.836, -6.6, -100.569)
+        shop_rotation = 138
     elif getCurrentMap() == Map.HORIZON_LUNAR_COLONY:
         dummy_bot_spawn_position = vect(-5.277, 8.455, -0.963)
         dummy_bot_spawn_facing = vect(-5.277, 8.455, -0.963)
-        shop_location = vect(-38.034, 19.101, -98.472)
-        shop_talent_positions[0] = vect(-40.56, 20.427, -94.246)
-        shop_talent_positions[1] = vect(-42.443, 20.629, -96.138)
-        shop_talent_positions[2] = vect(-42.719, 20.427, -98.671)
+        shop_location = vect(70.59, 45.82, -38.84)
+        shop_rotation = -62
     elif getCurrentMap() == Map.PARIS:
         dummy_bot_spawn_position = vect(-15.892, 11.764, -28.584)
         dummy_bot_spawn_facing = vect(-15.892, 11.765, -28.584)
-        shop_location = vect(-57.281, 15, 16.922)
-        shop_talent_positions[0] = vect(-58.455, 15.865, 20.72)
-        shop_talent_positions[1] = vect(-59.898, 16.065, 19.441)
-        shop_talent_positions[2] = vect(-61.128, 15.865, 18)
+        shop_location = vect(-160.69, 9.10, -22.19)
+        shop_rotation = -17
     elif getCurrentMap() == Map.TEMPLE_OF_ANUBIS:
         dummy_bot_spawn_position = vect(9.821, 1.229, -34.382)
         dummy_bot_spawn_facing = vect(9.821, 1.229, -34.382)
-        shop_location = vect(-11.913, 9.69, 140.21)
-        shop_talent_positions[0] = vect(-14.907, 10.161, 136.422)
-        shop_talent_positions[1] = vect(-12.276, 10.256, 135.274)
-        shop_talent_positions[2] = vect(-9.479, 10.212, 135.867)
+        shop_location = vect(-26.06, 104.34, -57.04)
+        shop_rotation = 150
     elif getCurrentMap() == Map.VOLSKAYA:
         dummy_bot_spawn_position = vect(-5.23, -5.49, 20.299)
         dummy_bot_spawn_facing = vect(-5.23, -5.49, 20.299)
         shop_location = vect(29.638, 0.967, 135.899)
-        shop_talent_positions[0] = vect(34.473, 1.742, 133.502)
-        shop_talent_positions[1] = vect(35.005, 1.942, 136.165)
-        shop_talent_positions[2] = vect(34.623, 1.742, 139)
+        shop_rotation = 87
     elif getCurrentMap() == Map.MALEVENTO:
         dummy_bot_spawn_position = vect(19.218, 9.455, 36.238)
         dummy_bot_spawn_facing = vect(19.218, 9.455, 36.238)
-        shop_location = vect(-37.854, -3.482, 27.558)
-        shop_talent_positions[0] = vect(-42.108, -2.527, 30.596)
-        shop_talent_positions[1] = vect(-43.465, -2.309, 28.296)
-        shop_talent_positions[2] = vect(-43.142, -2.372, 25.602)
+        shop_location = vect(-54.88, -1.37, -34.13)
+        shop_rotation = -138
+    elif getCurrentMap() == Map.ROUTE66:
+        dummy_bot_spawn_position = vect(-72.46, 8.05, 9.77)
+        dummy_bot_spawn_facing = vect(19.218, 9.455, 36.238)
+        shop_location = vect(-2.97, 49.67, -36.77)
+        shop_rotation = 60
+
+    #--- Derive the three talent positions from shop_location + shop_rotation (same logic for every map) ---
+    #--- SHOP_TALENT_ELEVATION lifts all three orbs; SHOP_TALENT_MIDDLE_ELEVATION adds EXTRA lift to the middle (1) only ---
+    shop_talent_positions[0] = shop_location + angleToDirection(shop_rotation + SHOP_TALENT_SPREAD, -SHOP_TALENT_ELEVATION) * SHOP_TALENT_RADIUS
+    shop_talent_positions[1] = shop_location + angleToDirection(shop_rotation, -(SHOP_TALENT_ELEVATION + SHOP_TALENT_MIDDLE_ELEVATION)) * SHOP_TALENT_RADIUS
+    shop_talent_positions[2] = shop_location + angleToDirection(shop_rotation - SHOP_TALENT_SPREAD, -SHOP_TALENT_ELEVATION) * SHOP_TALENT_RADIUS
 
 
 def create_talent_hud_texts():
@@ -404,6 +388,7 @@ def create_talent_hud_texts():
     hudText(getAllPlayers(), null, TOP_RIGHT_TEXT, HudPosition.RIGHT, 0, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     #hudText(getAllPlayers(), null, "", "[More info: workshop.codes/ZEKK3]", HudPosition.RIGHT, 1, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     hudSubheader(localPlayer if localPlayer.can_enter_shop == true and localPlayer.replacing_talent_show_confirmation == false and localPlayer.replacing_talent_show_bought_talents == false else null, "[Hold: {0} to use Hearthstone]".format(buttonString(Button.RELOAD)) if localPlayer.browsing_shop == false else "[Hold: {0} to skip a talent, exit shop and get a XP boost]".format(buttonString(Button.RELOAD)) if localPlayer.browsing_shop == true else "", HudPosition.TOP, 2, Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
+    hudSubheader(localPlayer if localPlayer.browsing_shop == true else null, "[Press {0} for {1} layout]".format(buttonString(Button.ULTIMATE), "Keyboard" if localPlayer.using_gamepad else "Controller"), HudPosition.TOP, 4, Color.YELLOW, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.DEFAULT)
     #Grim Reaper cancel hint, shown under the casting progress bar while casting
     hudSubheader(localPlayer if localPlayer.is_using_ability[Talent.GRIM_REAPER] == true and localPlayer.casting_success == false else null, "{0} = Cancel".format(buttonString(Button.INTERACT)), HudPosition.TOP, 3, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.NEVER)
 
@@ -457,6 +442,9 @@ rule "GENERAL - - - [EACH PLAYER] Has Spawned":
         setMatchTime(3599)
     #eventPlayer.xp_orb_position_on_player = false
     if not eventPlayer.isDummy():
+        if not eventPlayer.input_device_checked and eventPlayer.getCurrentHero() == Hero.SOLDIER:
+            eventPlayer.input_device_checked = true
+            async(detect_input_device, AsyncBehavior.NOOP)
         if eventPlayer.xp_boost_is_active == false and ((eventPlayer.amount_of_talents_purchased == 0 or eventPlayer.amount_of_talents_purchased == 25) or eventPlayer.skipped_a_talent == true or (eventPlayer.amount_of_talents_purchased > 0 and eventPlayer.amount_of_talents_purchased <= (player_with_most_talents.amount_of_talents_purchased - 5))):
             async(activate_xp_boost, AsyncBehavior.NOOP)
         if eventPlayer.is_using_ability[Talent.STEALTH] == true:
@@ -487,6 +475,17 @@ rule "GENERAL - - - [EACH PLAYER] Has Spawned":
     #wait is needed to see if max health is upgraded first
     wait()
     heal(eventPlayer, null, eventPlayer.getMaxHealth())
+
+
+def detect_input_device():
+    @Name "GENERAL - - - [SUBROUTINE] Detect Input Device"
+
+    eventPlayer.device_check_facing = round(horizontalAngleOfDirection(eventPlayer.getFacingDirection()))
+    eventPlayer.startFacing(angleToDirection(eventPlayer.device_check_facing + 1, 0) if [Button.ABILITY_1, Button.ABILITY_2, Button.CROUCH, Button.INTERACT, Button.JUMP, Button.MELEE, Button.PRIMARY_FIRE, Button.RELOAD, Button.SECONDARY_FIRE, Button.ULTIMATE].any(lambda input_button: inputBindingString(input_button)[0] and strContains("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&~\"#'{([-|`_\\^@)]=}^$%*,?.;/:>²ÉÈÇÀÙ+¤^ßÜÖÄÑ¡´¿ÒÌСЛП↓←→↑스아좌왼숫우오위空回退大下左暂右上；，向數", inputBindingString(input_button).charAt(0))) else angleToDirection(eventPlayer.device_check_facing - 1, 0), 999999, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
+    wait(0.25)
+    waitUntil(round(horizontalAngleOfDirection(eventPlayer.getFacingDirection()) * 100) / 100 in [eventPlayer.device_check_facing + 1, eventPlayer.device_check_facing - 1], 3)
+    eventPlayer.using_gamepad = round(horizontalAngleOfDirection(eventPlayer.getFacingDirection()) * 100) / 100 == eventPlayer.device_check_facing - 1
+    eventPlayer.stopFacing()
 
 
 rule "GENERAL - - - Player Died":
@@ -551,7 +550,6 @@ rule "GENERAL - - - Player Died":
         eventPlayer.bot_combat_awareness_start = 0
         eventPlayer.stopForcingButton(Button.PRIMARY_FIRE)
         eventPlayer.bot_state_id = BotState.DEAD
-        eventPlayer.debug_bot_state = "DEAD"
         eventPlayer.bot_throttle_paused = true
         waitUntil(eventPlayer.isAlive() and eventPlayer.hasSpawned(), 99999)
         wait(BOT_RESPAWN_WAIT)
@@ -721,14 +719,9 @@ def which_players_have_grim_reaper():
     players_with_grim_reaper = [player for player in getAllPlayers() if player.talent_ranks[Talent.GRIM_REAPER] > 0]
 
 def restore_ability1():
-    @Name "GENERAL - - - [SUBROUTINE] Restore Ability 1 (sprint stays disabled for Jetpack owners)"
+    @Name "GENERAL - - - [SUBROUTINE] Restore Ability 1 (Sprint)"
 
-    #Jetpack repurposes Ability 1 as the flight button and replaces sprint with a passive ground-speed boost,
-    #so any state that would normally re-grant sprint must keep Ability 1 disabled for Jetpack owners.
-    if eventPlayer.talent_ranks[Talent.JETPACK] > 0:
-        eventPlayer.setAbility1Enabled(false)
-    else:
-        eventPlayer.setAbility1Enabled(true)
+    eventPlayer.setAbility1Enabled(true)
 
 def recalculate_player_speed():
     @Name "Subroutine: Recalculate Player Speed"
@@ -741,11 +734,7 @@ def recalculate_player_speed():
         eventPlayer.stats[Stat.SPEED] = 100
 
     if eventPlayer.hit_by_talent[Talent.CRYOGENICS] == null:
-        #Jetpack owners trade sprint for a passive 125% ground-speed boost (not while actively flying or in a reduced-speed state)
-        if eventPlayer.talent_ranks[Talent.JETPACK] > 0 and eventPlayer.is_using_ability[Talent.JETPACK] == false and eventPlayer.stats[Stat.SPEED] == 100:
-            eventPlayer.setMoveSpeed(125 * eventPlayer.adrenaline_rush_value / 100)
-        else:
-            eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
+        eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
         
 
 rule "GENERAL - - - Restore Speed When No Slow Active":

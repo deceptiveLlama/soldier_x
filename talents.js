@@ -169,9 +169,9 @@ var talents = [
       id: "jetpack",
       name: "Jetpack",
       icon: "('<tx0C000000000721CB>')",
-      keybind: '"[Hold: [SHIFT]]"',
-      description: "Hold while airborne to fly. Replaces sprint with a passive ground-speed boost.",
-      comment: "Alternative input trigger: Jump",
+      keybind: '"[Hold: [JETPACKBTN][JETPACKAIR]]"',
+      description: "Hold while airborne to fly.",
+      comment: "",
       cooldown: 0,
       upgrade_information: "[Upgrade: +Fuel Efficiency]",
       cd_reduction_per_rank: 0,
@@ -479,7 +479,7 @@ var talents = [
   result += "globalvar talent_names = ["+talents.map(x => `"{} [${x.name}]".format(${x.icon})`)+"]\n"
   result += "globalvar talent_descriptions = ["+talents.map(x => JSON.stringify(x.description))+"]\n"
   result += "globalvar upgrade_information = ["+talents.map(x => JSON.stringify(x.upgrade_information))+"]\n"
-  result += "globalvar additional_information = ["+talents.map(x => JSON.stringify(x.comment))+"]\n" 
+  result += "globalvar additional_information = ["+talents.map(x => JSON.stringify(x.comment))+"]\n"
   result += "globalvar talent_information_unique = ["+talents.map(x => "["+x.conflicts_with.map(x => "Talent."+x.toUpperCase())+"]")+"]\n"
   result += "globalvar talent_information_expand_mind = ["+talents.map(x => x.expand_mind ? "Talent."+x.expand_mind.toUpperCase() : "null")+"]\n" 
   result += "globalvar talent_requirements = ["+talents.map(x => "["+x.requires_any_of.map(x => "Talent."+x.toUpperCase())+"]")+"]\n"
