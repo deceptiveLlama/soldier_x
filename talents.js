@@ -17,7 +17,7 @@ var talents = [
     { 
       id: "purity_field",
       name: "Purity Field",
-      icon: "abilityIconString(Hero.BAPTISTE, Button.ABILITY_2)",
+      icon: "('<tx0C00000000004120>')",
       keybind: '"[[Q]]"',
       description: "Activate to exit combat, become immune and increase your healing received. Can not use damage abilities while immune.",
       comment: "Can be used to be able to escape with Hearthstone, enter Stealth or heal yourself with bandage without getting interrupted.",
@@ -32,7 +32,7 @@ var talents = [
     {
       id: "cybernetics",
       name: "Cybernetics",
-      icon: "abilityIconString(Hero.SOMBRA, Button.SECONDARY_FIRE)",
+      icon: "('<tx0C00000000028FCB>')",
       keybind: '"[Passive]"',
       description: "Add permanent shields to your health. Shields regenerate automatically and can't be healed with healing abilities.",
       comment: "Shields start regenerating when you exit combat.",
@@ -47,7 +47,7 @@ var talents = [
     { 
       id: "soul_harvest",
       name: "Soul Harvest",
-      icon: "abilityIconString(Hero.MOIRA, Button.SECONDARY_FIRE)",
+      icon: "abilityIconString(Hero.ZENYATTA, Button.ABILITY_1)",
       keybind: '"[Passive]"',
       description: "Picking up XP orbs will heal you.",
       comment: "Combine with a talent that increase your mobility to reach orbs faster than others!",
@@ -62,7 +62,7 @@ var talents = [
     { 
       id: "poisonous_dagger",
       name: "Poisonous Dagger",
-      icon: "abilityIconString(Hero.JUNKER_QUEEN, Button.SECONDARY_FIRE)",
+      icon: "('<tx0C0000000001F937>')",
       keybind: '"[[MELEE] (In Stealth)]"',
       description: "Your melee in stealth will debuff your target with a poison that deal damage after 5s.",
       comment: "",
@@ -78,7 +78,7 @@ var talents = [
     { 
       id: "stealth",
       name: "Stealth",
-      icon: "abilityIconString(Hero.REAPER, Button.ABILITY_1)",
+      icon: "('<tx0C000000000207B6>')",
       keybind: '"[Hold: [CTRL]]"',
       description: "Enter stealth when crouching out of combat. Melee from stealth will stun the target.",
       comment: "Taking damage or using damage dealing abilities will break stealth.",
@@ -108,7 +108,7 @@ var talents = [
     { 
       id: "dive_bomb",
       name: "Dive Bomb",
-      icon: "abilityIconString(Hero.HAMMOND, Button.CROUCH)",
+      icon: "('<tx0C000000000207B7>')",
       keybind: '"[[CTRL] (In Air)]"',
       description: "Gain the ability to dive down on players from the air. Targets hit will be knocked away and take damage.",
       comment: "Must be activated at least 3.5m above the ground. Damage is increased the longer you stay in air (up to 1s).",
@@ -123,7 +123,7 @@ var talents = [
     { 
       id: "cryogenics",
       name: "Cryogenics",
-      icon: "abilityIconString(Hero.MEI, Button.ULTIMATE)",
+      icon: "('<tx0C0000000002D38F>')",
       keybind: '"[[RIGHTCLICK]]"',
       description: "Your secondary fire will slow enemies. Affected targets can't use sprint.",
       comment: "",
@@ -138,7 +138,7 @@ var talents = [
     { 
       id: "railgun",
       name: "Railgun",
-      icon: "abilityIconString(Hero.SOJOURN, Button.SECONDARY_FIRE)",
+      icon: "iconString(Icon.BOLT)",
       keybind: '"[[RIGHTCLICK] + [LEFTCLICK]]"',
       description: "Replace your secondary fire with a railgun attachment. Railgun will count as your secondary fire.",
       comment: "Hitscan ability. Headshots will deal double damage.",
@@ -168,7 +168,7 @@ var talents = [
     { 
       id: "jetpack",
       name: "Jetpack",
-      icon: "('<tx0C000000000721CB>')",
+      icon: "('<tx0C00000000011E06>')",
       keybind: '"[Hold: [JETPACKBTN][JETPACKAIR]]"',
       description: "Hold while airborne to fly.",
       comment: "",
@@ -183,7 +183,7 @@ var talents = [
     { 
       id: "lifesteal_ammo",
       name: "Lifesteal Ammo",
-      icon: "abilityIconString(Hero.BAPTISTE, Button.SECONDARY_FIRE)",
+      icon: "('<tx0C0000000004F73D>')",
       keybind: '"[[LEFTCLICK] or [RIGHTCLICK]]"',
       description: "A percentage of the damage you deal with primary fire or secondary fire will heal you.",
       comment: "",
@@ -198,7 +198,7 @@ var talents = [
     { 
       id: "health_regen",
       name: "Health Regen",
-      icon: "abilityIconString(Hero.BAPTISTE, Button.ABILITY_1)",
+      icon: "('<tx0C000000000039DD>')",
       keybind: '"[Passive]"',
       description: "Passively regenerate health over time.",
       comment: "",
@@ -213,7 +213,7 @@ var talents = [
     { 
       id: "health_potions",
       name: "Health Potions",
-      icon: "abilityIconString(Hero.ROADHOG, Button.ABILITY_2)",
+      icon: "('<tx0C0000000005FA7F>')",
       keybind: '"[[E]]"',
       description: "Buy 3 Health Potions. Each potion vial refills one at a time each 15s.",
       comment: "Each potion applies its healing over 2 seconds.",
@@ -228,7 +228,7 @@ var talents = [
     { 
       id: "ignite",
       name: "Ignite",
-      icon: "iconString(Icon.FIRE)",
+      icon: "('<tx0C00000000070EAE>')",
       keybind: '"[[RIGHTCLICK]]"',
       description: "A percentage of the damage you deal with secondary fire also deals fire damage over time.",
       comment: "",
@@ -243,7 +243,7 @@ var talents = [
     { 
       id: "overclock",
       name: "Overclock",
-      icon: "abilityIconString(Hero.TORBJORN, Button.ABILITY_2)",
+      icon: "('<tx0C0000000004F73C>')",
       keybind: '"[Passive]"',
       description: "Reduces the cooldown of Railgun.",
       comment: "",
@@ -258,7 +258,7 @@ var talents = [
     { 
       id: "shadowstep",
       name: "Shadowstep",
-      icon: "abilityIconString(Hero.MOIRA, Button.ABILITY_1)",
+      icon: "('<tx0C0000000007550C>')",
       keybind: '"[Double Tap: [SPACEBAR]]"',
       description: "Leap in any direction, become invisible and invulnerable for 0.5s. XP Orbs will reset the cooldown.",
       comment: "",
@@ -303,7 +303,7 @@ var talents = [
     { 
       id: "fireball",
       name: "Fireball",
-      icon: "abilityIconString(Hero.PHARAH, Button.ABILITY_1)",
+      icon: "iconString(Icon.FIRE)",
       keybind: '"[[F]]"',
       description: "Install a weapon attachment that will let you launch fireballs.",
       comment: "",
@@ -318,7 +318,7 @@ var talents = [
     { 
       id: "ignore_pain",
       name: "Ignore Pain",
-      icon: "abilityIconString(Hero.ZARYA, Button.ABILITY_1)",
+      icon: "('<tx0C0000000004F73E>')",
       keybind: '"[Passive]"',
       description: "Resist a lot of damage while you are casting, reloading, sprinting or stunned.",
       comment: "",
@@ -326,14 +326,14 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage Resistance]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      is_unique: true,
+      is_unique: false,
       conflicts_with: [],
       expand_mind: null,
     },
     { 
       id: "javelin",
       name: "Javelin",
-      icon: "abilityIconString(Hero.ORISA, Button.SECONDARY_FIRE)",
+      icon: "iconString(Icon.ARROW_RIGHT)",
       keybind: '"[Passive]"',
       description: "Gain the ability to throw a javelin that deals damage, stuns and knocks back the player hit.",
       comment: "",
@@ -363,7 +363,7 @@ var talents = [
     { 
       id: "pyromaniac",
       name: "Pyromaniac",
-      icon: "('<tx0C000000000144A8>')",
+      icon: "('<tx0C0000000000333A>')",
       keybind: '"[Passive]"',
       description: "Your Fireball will heal you if you stand near the explosion radius.",
       comment: "",
@@ -425,12 +425,12 @@ var talents = [
     { 
       id: "gigachad",
       name: "Gigachad",
-      icon: "abilityIconString(Hero.RAMATTRA, Button.ABILITY_1)",
+      icon: "('<tx0C00000000004121>')",
       keybind: '"[Passive]"',
-      description: "Increase your health & headshot resistance, but slightly increase your size.",
+      description: "Increase your size and health, and heal for a portion of headshot damage you take.",
       comment: "",
       cooldown: 0,
-      upgrade_information: "[Upgrade: +Health, +Headshot Resist, +Size]",
+      upgrade_information: "[Upgrade: +Health, +Headshot Healing, +Size]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
       is_unique: false,

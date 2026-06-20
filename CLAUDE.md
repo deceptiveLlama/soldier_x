@@ -18,13 +18,14 @@
 - Maximum of 128 texts and 128 effects during runtime; adding more deletes the oldest one automatically.
 - Arrays are limited to 1000 elements per dimension (index 0-999).
 - `wait()` has a minimum resolution of 0.016s (one tick). Any `wait()` value below 0.016 is rounded up to one tick. When dividing intervals across players (e.g., serialized operations), ensure the per-player wait stays >= 0.016s.
+- Number literals are limited to 3 decimal places (0.001 resolution) — a fourth decimal is rounded off. When a value needs finer precision (e.g. an exact percentage), factor it: `(11.25 + rank*3.75) / 100` instead of `0.1125 + rank*0.0375`.
 
 ## OverPy Patterns
 - For-loop variables must be plain variables (not `#!defineMember`).
 - Chasing an array or value at array index is not possible — it must be a plain variable. The chased variable can be stored in an array though.
 - Use `i`, `j`, `k` as global iterator variables for loops without waits. Use dedicated named variables for loops that contain waits. During `wait()`/`waitUntil()`, other rules can overwrite shared iterators.
 - Use descriptive names in list comprehensions (e.g., `node`, `edge`, `neighbor` — not `n`, `e`). No nested list comprehensions — OverPy doesn't support them. Use for loops instead.
-- Workshop values cannot nest more than 1 level deep. Break complex expressions into precomputed variables instead of nesting sorts/filters/lambdas inside each other.
+- Workshop lambda functions (`sorted`, `filtered`, `mapped`) cannot be nested inside each other — their per-element references collide. Precompute the inner result into a variable first. Ordinary values (math, indexing, ternaries) nest freely.
 - For-loops don't always need waits. If the game crashes or behaves unexpectedly, investigate whether a loop is too heavy or running infinitely — add waits only where needed.
 - Subroutines:
 	- `subroutine_name()` (Call Subroutine) — blocks the calling rule until done.

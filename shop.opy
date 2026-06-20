@@ -468,7 +468,6 @@ rule "SHOP - - - Buy Talent":
     eventPlayer.experience_max = max_experience_per_level[eventPlayer.amount_of_talents_purchased]
     #if eventPlayer.talent_ranks[Talent.FIREBALL] > 0 or eventPlayer.talent_ranks[Talent.JUGGERNAUT] > 0:
         #async(spawned_with_fireball, AsyncBehavior.RESTART)
-    eventPlayer.debug_cooldown_capture = true
     eventPlayer.is_respawning = true
     eventPlayer.respawn()
     eventPlayer.selected_talent_in_shop = 1
@@ -583,7 +582,7 @@ def buy_purity_field():
         eventPlayer.talents_you_do_not_have.remove(Talent.PURITY_FIELD)
         #Group A exclusivity: Purity Field and Berserker share the Ultimate button, so owning one removes the other from the pool
         eventPlayer.talents_you_do_not_have.remove(Talent.BERSERKER)
-        eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.PURITY_FIELD]
+        eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.PURITY_FIELD]
 
 def buy_cybernetics():
     @Name "TALENT SYSTEM - - - [TALENT 2: CYBERNETICS] [SUBROUTINE] Buy Cybernetics (hit_by_ability[2] is borrowed by talent: juggernaut)"
@@ -616,7 +615,7 @@ def buy_poisonous_dagger():
         eventPlayer.talents_you_do_not_have.append(Talent.POISONOUS_DAGGER)
         return
     if eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] == 1:
-        eventPlayer.talent_trigger_times[Talent.POISONOUS_DAGGER] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.POISONOUS_DAGGER]
+        eventPlayer.talent_trigger_times[Talent.POISONOUS_DAGGER] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.POISONOUS_DAGGER]
         eventPlayer.talents_you_do_not_have.remove(Talent.POISONOUS_DAGGER)
 
 def buy_stealth():
@@ -644,7 +643,7 @@ def buy_stealth():
         return
     if eventPlayer.talent_ranks[Talent.STEALTH] == 1:
         eventPlayer.current_stealth_target = null
-        eventPlayer.talent_trigger_times[Talent.STEALTH] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.STEALTH]
+        eventPlayer.talent_trigger_times[Talent.STEALTH] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.STEALTH]
         eventPlayer.entering_stealth = false
         createEffect(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true else null, Effect.REAPER_WRAITH_FORM, Color.TEAM_1, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
         eventPlayer.stealth_effect_id = getLastCreatedEntity()
@@ -653,7 +652,7 @@ def buy_stealth():
         createEffect(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true else null, Effect.ECHO_CLONING, Color.TEAM_1, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
         eventPlayer.stealth_effect_id2 = getLastCreatedEntity()
 
-        createInWorldText(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true and eventPlayer.current_stealth_target != null and distance(eventPlayer.getPosition(), eventPlayer.current_stealth_target.getPosition()) < 10 else null, "{0}: Stun!".format(abilityIconString(Hero.SOLDIER, Button.MELEE)) if eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] == 0 else "{0}: Poison & Stun!".format(abilityIconString(Hero.JUNKER_QUEEN, Button.SECONDARY_FIRE)), updateEveryFrame(eventPlayer.current_stealth_target.getPosition() + Vector.UP), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
+        createInWorldText(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true and eventPlayer.current_stealth_target != null and distance(eventPlayer.getPosition(), eventPlayer.current_stealth_target.getPosition()) < 10 else null, "{0}{1}".format("{0}: ".format(buttonString(Button.MELEE)) if eventPlayer.using_gamepad else "[{0}]: ".format(buttonString(Button.MELEE)), "Stun!" if eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] == 0 else "Poison & Stun!"), updateEveryFrame(eventPlayer.current_stealth_target.getPosition() + Vector.UP), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
 
         eventPlayer.stealth_stun_text_id = getLastCreatedEntity()
 
@@ -681,7 +680,7 @@ def buy_juggernaut():
         eventPlayer.railgun_charge_effect_id = getLastCreatedEntity()
         eventPlayer.talents_you_do_not_have.remove(Talent.JUGGERNAUT)
         eventPlayer.talents_you_do_not_have.remove(Talent.FIREBALL)
-        eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.JUGGERNAUT]
+        eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.JUGGERNAUT]
 */
 
 def buy_dive_bomb():
@@ -692,7 +691,7 @@ def buy_dive_bomb():
         return
     if eventPlayer.talent_ranks[Talent.DIVE_BOMB] == 1:
         eventPlayer.talents_you_do_not_have.remove(Talent.DIVE_BOMB)
-        eventPlayer.talent_trigger_times[Talent.DIVE_BOMB] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.DIVE_BOMB]
+        eventPlayer.talent_trigger_times[Talent.DIVE_BOMB] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.DIVE_BOMB]
 
 def buy_cryogenics():
     @Name "TALENT SYSTEM - - - [TALENT 8: CRYOGENICS] [SUBROUTINE] Buy Cryogenics"
@@ -728,7 +727,7 @@ def buy_railgun():
         eventPlayer.talents_you_do_not_have.remove(Talent.OVERCLOCK)
         return
     if eventPlayer.talent_ranks[Talent.RAILGUN] == 1:
-        eventPlayer.talent_trigger_times[Talent.RAILGUN] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.RAILGUN]
+        eventPlayer.talent_trigger_times[Talent.RAILGUN] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.RAILGUN]
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.OVERCLOCK)
         eventPlayer.railgun_projectile_start = []
@@ -849,7 +848,7 @@ def buy_health_potions():
         eventPlayer.talents_you_do_not_have.remove(Talent.ALCHEMIST)
         return
     if eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] == 1:
-        eventPlayer.talent_trigger_times[Talent.HEALTH_POTIONS] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.HEALTH_POTIONS]
+        eventPlayer.talent_trigger_times[Talent.HEALTH_POTIONS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.HEALTH_POTIONS]
         eventPlayer.amount_of_health_potions = 3
         eventPlayer.possible_talents.remove(Talent.POISON_VIALS)
         #eventPlayer.talents_you_do_not_have.remove(Talent.POISON_VIALS)
@@ -884,7 +883,7 @@ def buy_shadowstep():
         eventPlayer.talents_you_do_not_have.append(Talent.SHADOWSTEP)
         return
     if eventPlayer.talent_ranks[Talent.SHADOWSTEP] == 1:
-        eventPlayer.talent_trigger_times[Talent.SHADOWSTEP] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.SHADOWSTEP]
+        eventPlayer.talent_trigger_times[Talent.SHADOWSTEP] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.SHADOWSTEP]
         eventPlayer.talents_you_do_not_have.remove(Talent.SHADOWSTEP)
 
 def buy_burning_soul():
@@ -926,7 +925,7 @@ def buy_berserker():
         destroyEffect(eventPlayer.berserker_sound_id)
         return
     if eventPlayer.talent_ranks[Talent.BERSERKER] == 1:
-        eventPlayer.talent_trigger_times[Talent.BERSERKER] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.BERSERKER]
+        eventPlayer.talent_trigger_times[Talent.BERSERKER] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.BERSERKER]
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.BLOODTHIRST)
         createEffect(eventPlayer if eventPlayer.is_using_ability[Talent.BERSERKER] == true else null, Effect.WINSTON_PRIMAL_RAGE, Color.TEAM_1, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
@@ -948,7 +947,7 @@ def buy_fireball():
             smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.FIREBALL], talent_names[Talent.PYROMANIAC]))
             goto lbl_0
         if eventPlayer.talent_ranks[Talent.PYROMANIAC] > 0:
-            smallMessage(eventPlayer, "Need to remove {0} Pyromaniac first!".format(abilityIconString(Hero.REAPER, Button.ULTIMATE)))
+            smallMessage(eventPlayer, "Need to remove {0} Pyromaniac first!".format(('<tx0C0000000000333A>')))
             lbl_0:
             eventPlayer.replacing_talent_cancelled = true
             return
@@ -960,7 +959,7 @@ def buy_fireball():
         eventPlayer.talents_you_do_not_have.remove(Talent.PYROMANIAC)
         return
     if eventPlayer.talent_ranks[Talent.FIREBALL] == 1:
-        eventPlayer.talent_trigger_times[Talent.FIREBALL] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.FIREBALL]
+        eventPlayer.talent_trigger_times[Talent.FIREBALL] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.FIREBALL]
         eventPlayer.fireball_position = null
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.PYROMANIAC)
@@ -998,7 +997,7 @@ def buy_bandage():
         eventPlayer.talents_you_do_not_have.append(Talent.BANDAGE)
         return
     if eventPlayer.talent_ranks[Talent.BANDAGE] == 1:
-        eventPlayer.talent_trigger_times[Talent.BANDAGE] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.BANDAGE]
+        eventPlayer.talent_trigger_times[Talent.BANDAGE] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.BANDAGE]
         eventPlayer.talents_you_do_not_have.remove(Talent.BANDAGE)
 
 def buy_pyromaniac():
@@ -1036,7 +1035,7 @@ def buy_poison_vials():
         eventPlayer.talents_you_do_not_have.remove(Talent.ALCHEMIST)
         return
     if eventPlayer.talent_ranks[Talent.POISON_VIALS] == 1:
-        eventPlayer.talent_trigger_times[Talent.POISON_VIALS] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.POISON_VIALS]
+        eventPlayer.talent_trigger_times[Talent.POISON_VIALS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.POISON_VIALS]
         eventPlayer.talents_you_do_not_have.remove(Talent.HEALTH_POTIONS)
         eventPlayer.talents_you_do_not_have.remove(Talent.POISON_VIALS)
         eventPlayer.talents_you_do_not_have.append(Talent.ALCHEMIST)

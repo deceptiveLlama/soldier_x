@@ -19,37 +19,27 @@ settings {
                 "blackForest",
                 "eichenwalde",
                 "hollywood",
-                "castillo",
                 "chateauGuillard",
                 "ecopointAntarctica",
                 "kanezaka",
                 "malevento",
-                "necropolis",
                 "petra",
-                "hanamura",
-                "horizonLunarColony",
                 "paris",
                 "templeOfAnubis",
-                "volskaya",
                 "blizzWorld",
                 "kingsRow",
                 "dorado",
-                "havana",
                 "route66"
             ],
                 "scoreToWin": 100,
             /*"disabledMaps": [
-                "ecopointAntarcticaWinter",
                 "castillo",
+                "necropolis",
                 "havana",
-                "lijiangControlCenter",
-                "lijiangGarden",
-                "lijiangNightMarket",
-                "route66",
-                "workshopChamber",
-                "workshopExpanse",
-                "workshopGreenScreen",
-                "workshopIsland"
+                "hanamura",
+                "havana",
+                "volskaya",
+                "horizonLunarColony",
             ]*/
         },
         "general": {
@@ -78,7 +68,8 @@ settings {
             ],
             "general": {
                 # Due to a bug the following is false
-                "passiveHealthRegen": true
+                "passiveHealthRegen": true,
+                "enableRolePassive": false
             }
         }
     }

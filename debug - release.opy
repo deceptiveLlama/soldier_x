@@ -10,7 +10,6 @@
 
 #--- Workshop Settings (only active when this file is included) ---
 rule "DEBUG - - - Init Release Settings":
-    debug_damage_text = createWorkshopSettingBool("02. Testing", "Damage Text", false, 3)
     faster_testing = createWorkshopSettingBool("02. Testing", "Faster Testing", false, 1)
 
 #rule "DEBUG (For Spectator Only)":
@@ -62,6 +61,7 @@ globalvar debug_fireball = createWorkshopSettingInt("03. Talents (Use at your ow
 globalvar debug_gigachad = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Gigachad", 0, 0, 5, 0)
 #globalvar debug_gunslinger = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Gunslinger", 0, 0, 5, 0)
 globalvar debug_health_potions = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Health Potions", 0, 0, 5, 0)
+globalvar debug_health_regen = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Health Regen", 0, 0, 5, 0)
 globalvar debug_ignite = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Ignite", 0, 0, 5, 0)
 globalvar debug_ignore_pain = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Ignore Pain", 0, 0, 5, 0)
 globalvar debug_jetpack = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Jetpack", 0, 0, 5, 0)
@@ -273,6 +273,12 @@ def buy_debug_talents():
         buy_shadowstep()
         eventPlayer.talent_ranks[Talent.SHADOWSTEP] = debug_shadowstep
         eventPlayer.amount_of_talents_purchased += debug_shadowstep
+    if debug_health_regen > 0:
+        eventPlayer.talent_ranks[Talent.HEALTH_REGEN] = 1
+        eventPlayer.bought_talents.append(Talent.HEALTH_REGEN)
+        buy_health_regen()
+        eventPlayer.talent_ranks[Talent.HEALTH_REGEN] = debug_health_regen
+        eventPlayer.amount_of_talents_purchased += debug_health_regen
         
 
 

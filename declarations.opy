@@ -82,13 +82,13 @@ globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 53
 playervar talent_trigger_times
 playervar railgun_charge
 
+#--- Game clock for responsive HUD: HUD text refreshes its number promptly only when it reads a variable, not the getTotalTimeElapsed() builtin. Set every tick; used only by cooldown DISPLAYS (logic stays on getTotalTimeElapsed()). ---
+globalvar current_time
+
 #--- Debug variables (plain declarations — Workshop Settings assigned in debug files) ---
 globalvar debug_spectator_tools
-globalvar debug_damage_text
 globalvar debug_texts = []
-playervar debug_cooldown_capture
-playervar debug_cd_end
-playervar debug_cd_sample_i
+globalvar debug_bot_gigachad
 
 #--- Testing ---
 globalvar faster_testing
@@ -138,7 +138,6 @@ playervar dpstracking_textID
 playervar dpstracking_position*/
 playervar i
 playervar rockets_cooldown
-playervar totalTimeElapsed
 playervar variable
 playervar amount_of_health_potions
 playervar amount_of_talents_purchased = 0
@@ -184,13 +183,12 @@ playervar purity_field_position = null
 playervar victims_in_burning_soul_radius
 #playervar remaining_poisonous_dagger_duration = 0
 playervar poisonous_dagger_attackers = []       # list of attackers who've poisoned this victim
-playervar poisonous_dagger_timestamp = []    # parallel array: totalTimeElapsed when each expires
+playervar poisonous_dagger_timestamp = []    # parallel array: getTotalTimeElapsed() when each expires
 playervar grim_reaper_camera_position = null
 playervar casting_timer = 0
 playervar grim_reaper_ramp_up = 0
 playervar purity_field_duration = 0
 playervar adrenaline_rush_value = 100
-playervar recentDamageDealtToSlot = 0
 playervar current_purity_field_target = 0
 playervar current_dive_bomb_target = 0
 
@@ -209,7 +207,6 @@ playervar current_dive_bomb_target = 0
 #!defineMember amount_of_bonus_talents variable[11]
 #!defineMember grim_reaper_damage_dealt variable[12]
 #!defineMember grim_reaper_damage_resisted variable[13]
-#!defineMember gigachad_damage_resisted variable[14]
 #!defineMember exit_shop_with_fireball variable[15]
 #!defineMember possible_talents_selector variable[16]
 #!defineMember grim_reaper_target variable[17]
@@ -234,6 +231,17 @@ playervar current_dive_bomb_target = 0
 #!defineMember victims_in_dive_bomb_radius variable[36]
 #!defineMember dive_bomb_damage_total variable[37]
 #!defineMember bot_throttle_paused variable[38]
+#!defineMember railgun_damage_dealt variable[39]
+#!defineMember current_damage_received variable[40]
+
+#--- Damage numbers: recent damage dealt per victim (variable[408-414]) ---
+#!defineMember recent_damage_victims variable[408]
+#!defineMember recent_damage_other variable[409]
+#!defineMember recent_damage_time_other variable[410]
+#!defineMember recent_damage_gun variable[411]
+#!defineMember recent_damage_crit_other variable[412]
+#!defineMember recent_damage_crit_gun variable[413]
+#!defineMember recent_damage_time_gun variable[414]
 
 #--- Shared global defineMember (global_variable[0-49]) ---
 
@@ -258,6 +266,7 @@ subroutine spawned_with_fireball
 subroutine stopped_using_hearthstone
 subroutine using_one_of_the_hearthstones
 subroutine recalculate_player_speed
+subroutine recalculate_damage_received
 subroutine restore_ability1
 subroutine which_players_have_grim_reaper
 subroutine detect_input_device
@@ -281,13 +290,13 @@ generateTalents()
 macro ALCHEMIST_PROC_CHANCE = random.randint(33 + ((player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] - 1) * 8.25), 100)
 macro BLOODTHIRST_DAMAGE_TO_HEALING_AMOUNT = eventDamage * (0.19 + eventPlayer.talent_ranks[Talent.BLOODTHIRST] * 0.062)
 macro BERSERKER_DURATION = 3.75 + eventPlayer.talent_ranks[Talent.BERSERKER] * 1.25
-macro BURNING_SOUL_DAMAGE = 3 + eventPlayer.talent_ranks[Talent.BURNING_SOUL] * 0.6
+macro BURNING_SOUL_DAMAGE = 2.25 + eventPlayer.talent_ranks[Talent.BURNING_SOUL] * 0.75
 macro BURNING_SOUL_ORB_DAMAGE = 75 + xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE_RANK] * 25
 macro BURNING_SOUL_AURA_RADIUS = 8
 macro BURNING_SOUL_ORB_DURATION = 4
 macro GRIM_REAPER_RADIUS = 4
 macro CRYOGENICS_SLOW_DURATION = 2 + eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 0.2
-macro CRYOGENICS_SLOW_AMOUNT = eventPlayer.stats[Stat.SPEED] * 0.5 - eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 10
+macro CRYOGENICS_SLOW_AMOUNT = eventPlayer.stats[Stat.SPEED] * (0.5 - eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 0.1)
 macro CYBERNETICS_SHIELD_AMOUNT = 56.25 + eventPlayer.talent_ranks[Talent.CYBERNETICS] * 18.75
 macro SHADOWSTEP_BASE_COOLDOWN = 22.5
 macro SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK = 2.5
@@ -295,8 +304,10 @@ macro STEALTH_BASE_COOLDOWN = 20
 macro STEALTH_COOLDOWN_REDUCTION_PER_RANK = 4
 macro GRIM_REAPER_COOLDOWN_REDUCTION_PER_RANK = 6
 macro HEALTH_POTIONS_COOLDOWN_REDUCTION_PER_RANK = 1
-macro HEALTH_POTIONS_HEALING_OVER_TIME = 21.875 + eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] * 8.75
-macro HEALTH_REGEN_HEALING_OVER_TIME = 4.5 + eventPlayer.talent_ranks[Talent.HEALTH_REGEN] * 0.9
+#Health Potions: Rank 1: 200 total healing (3 potions), Rank 5: 400 total healing
+macro HEALTH_POTIONS_HEALING_OVER_TIME = (150 + eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] * 50) / 6
+# Hidden +0.2084 on rank 1 (5 -> 5.2084/s) clears the ~5.2083 (125/24) heal-rate threshold below which OW's per-HP heal sound stutters — prevents that bug.
+macro HEALTH_REGEN_HEALING_OVER_TIME = 3.75 + eventPlayer.talent_ranks[Talent.HEALTH_REGEN] * 1.25 + (2084 / 10000 if eventPlayer.talent_ranks[Talent.HEALTH_REGEN] == 1 else 0)
 #FIREBALL_DAMAGE: Rank 1: 40 damage, Rank 5: 80 damage
 #FIREBALL_DAMAGE_OVER_TIME: Rank 1: 40 damage, Rank 5: 80 damage
 macro FIREBALL_DAMAGE = 30 + eventPlayer.talent_ranks[Talent.FIREBALL] * 10
@@ -311,8 +322,8 @@ macro FIREBALL_EXPLOSION_RADIUS = 4
 macro PYROMANIAC_INSTANT_HEALING = min(30 + eventPlayer.talent_ranks[Talent.PYROMANIAC] * 10, eventPlayer.getMaxHealthOfType(Health.NORMAL) - eventPlayer.getHealthOfType(Health.NORMAL))
 macro PYROMANIAC_HEALING_OVER_TIME = 6 + eventPlayer.talent_ranks[Talent.PYROMANIAC] * 2
 macro PYROMANIAC_HEALING_DURATION = 5
-#Railgun: Rank 1: 150(300 headshot) damage, Rank 5: 200(400 headshot) damage
-macro RAILGUN_ADDITIONAL_DAMAGE = 275 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 25 if eventWasCriticalHit else 137.5 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 12.5
+#Railgun: Rank 1: 100(150 headshot) damage, Rank 5: 200(300 headshot) damage
+macro RAILGUN_ADDITIONAL_DAMAGE = 112.5 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 37.5 if eventWasCriticalHit else 75 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 25
 #Gunslinger: Rank 1: 66(132 headshot) damage, Rank 5: 79(158 headshot) damage - - - 19(38 headshot) damage added as well from the primary fire
 #macro GUNSLINGER_ADDITIONAL_DAMAGE = round(eventDamage * 3.333 + eventDamage * attacker.talent_ranks[Talent.GUNSLINGER] * 0.166)
 #IGNITE_DAMAGE_PER_SECOND: Rank 1: 40 total damage, Rank 5: 80 total damage
@@ -326,8 +337,8 @@ macro IGNITE_RAILGUN_DAMAGE_PER_SECOND = round(12.45 + attacker.talent_ranks[Tal
 #Poisonous Dagger: max is there to account for if a player leave and code breaks. To lazy to fix another way atm.
 macro POISONOUS_DAGGER_DAMAGE = max(75 + eventPlayer.poisonous_dagger_attackers[0].talent_ranks[Talent.POISONOUS_DAGGER] * 25, 100)
 macro POISONOUS_DAGGER_DURATION = 5
-#Soul Harvest: Rank 1: 150 total healing, Rank 5: 300 total healing
-macro SOUL_HARVEST_HEALING = round(112.5 + player_picking_up_orb.talent_ranks[Talent.SOUL_HARVEST] * 37.5)
+#Soul Harvest: Rank 1: 125 total healing, Rank 5: 250 total healing
+macro SOUL_HARVEST_HEALING = round(93.75 + player_picking_up_orb.talent_ranks[Talent.SOUL_HARVEST] * 31.25)
 #Bandage: Rank 1: 200 total healing, Rank 5: 400 total healing
 macro BANDAGE_HEAL_OVER_TIME = (15 + eventPlayer.talent_ranks[Talent.BANDAGE] * 5)
 macro BANDAGE_HEAL_OVER_TIME_DURATION = 10
@@ -346,24 +357,34 @@ macro GRIM_REAPER_THRESHOLD_NORMALIZED_VICTIM = (0.150 + (victim.talent_ranks[Ta
 macro DIVE_BOMB_DAMAGE = (56.25 + eventPlayer.talent_ranks[Talent.DIVE_BOMB] * 18.75)
 #For HUD
 macro DIVE_BOMB_DAMAGE_LOCAL = (56.25 + localPlayer.talent_ranks[Talent.DIVE_BOMB] * 18.75)
-#Lifesteal: Rank 1: 18.7% healing, Rank 5: 37.5% healing
-macro LIFESTEAL_HEAL = eventDamage * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
+#Lifesteal: Rank 1: 15% healing, Rank 5: 30% healing
+macro LIFESTEAL_HEAL = eventDamage * (11.25 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 3.75) / 100
 #macro LIFESTEAL_BOMBARDMENT_HEAL = eventDamage * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047) / 2
-macro LIFESTEAL_RAILGUN_HEAL = (RAILGUN_ADDITIONAL_DAMAGE + eventDamage) * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
+macro LIFESTEAL_RAILGUN_HEAL = eventPlayer.railgun_damage_dealt * (11.25 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 3.75) / 100
 #macro LIFESTEAL_GUNSLINGER_HEAL = (GUNSLINGER_ADDITIONAL_DAMAGE + eventDamage) * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
-
-#25% at Rank 1, 50% at Rank 5
-macro GIGACHAD_RESIST_NORMALIZED_VICTIM = (3 + victim.talent_ranks[Talent.GIGACHAD]) / 16
-
-macro GIGACHAD_KNOCKBACK_RECEIVED = 100 - eventPlayer.talent_ranks[Talent.GIGACHAD] * 20
 
 macro PURITY_FIELD_HEALING_RECEIVED = 125 + eventPlayer.talent_ranks[Talent.PURITY_FIELD] * 25
 macro PURITY_FIELD_DURATION = 3.75 + eventPlayer.talent_ranks[Talent.PURITY_FIELD] * 1.25
+macro PURITY_FIELD_MOVE_SPEED = 100
+macro GIGACHAD_SCALED_SIZE = 1 + eventPlayer.talent_ranks[Talent.GIGACHAD] * 0.07
+macro GIGACHAD_MOVE_SPEED = 100 - eventPlayer.talent_ranks[Talent.GIGACHAD] * 5
+macro PURITY_EFFECTS_VISIBLE = eventPlayer.browsing_shop == false and not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success) and not eventPlayer.is_using_ability[Talent.STEALTH]
 macro STEALTH_STUN_DURATION = 0.8 + eventPlayer.talent_ranks[Talent.STEALTH] * 0.2
 macro GRIM_REAPER_CAST_TIME = 2.25 - eventPlayer.talent_ranks[Talent.GRIM_REAPER] * 0.25
 macro GRIM_REAPER_CAST_TIME_LOCAL = 2.25 - localPlayer.talent_ranks[Talent.GRIM_REAPER] * 0.25
 macro GRIM_REAPER_FLIGHT_SPEED = 12 + eventPlayer.talent_ranks[Talent.GRIM_REAPER] * 3.6
 macro GRIM_REAPER_HEALTH_THRESHOLD = 0.25
+macro DAMAGE_NUMBER_WINDOW = 1.5
+macro DAMAGE_NUMBER_Y_NEAR = 2
+macro DAMAGE_NUMBER_Y_FAR = 3
+macro DAMAGE_NUMBER_DIST_MIN = 1
+macro DAMAGE_NUMBER_DIST_MAX = 25
+macro DAMAGE_NUMBER_Y = DAMAGE_NUMBER_Y_NEAR + (DAMAGE_NUMBER_Y_FAR - DAMAGE_NUMBER_Y_NEAR) * max(0, min(1, (distance(eventPlayer.getPosition(), localPlayer.getPosition()) - DAMAGE_NUMBER_DIST_MIN) / (DAMAGE_NUMBER_DIST_MAX - DAMAGE_NUMBER_DIST_MIN)))
+macro DAMAGE_NUMBER_HELIX_THRESHOLD = 120
 #Adrenaline Rush: Rank 1: 125% speed over 10s. Rank 5: 150% speed over 20s. Decays 2.5% per second.
 #macro ADRENALINE_RUSH_MAX_SPEED = 125 + (eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] - 1) * 6.25
 #macro ADRENALINE_RUSH_DECAY_RATE = 2.5
+
+#--- Camera-basis vectors for in-world HUD texts anchored to localPlayer's view ---
+macro HUD_CAM_UP = angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)
+macro HUD_CAM_FWD = localPlayer.getFacingDirection()

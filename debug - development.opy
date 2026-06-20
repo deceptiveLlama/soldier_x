@@ -1,5 +1,21 @@
 #!mainFile "soldier_x.opy"
 
+#--- Asset browser (dev tool): browse talents, icons, and hero ability strings. defineMember range variable[600-602], global_variable[110-111] ---
+#!defineMember debug_browser_active variable[600]
+#!defineMember debug_browser_index variable[601]
+#!defineMember debug_browser_category variable[602]
+#!defineMember debug_browser_icon_strings global_variable[110]
+#!defineMember debug_browser_heroes global_variable[111]
+
+macro DEBUG_BROWSER_DISTANCE = 8
+macro DEBUG_BROWSER_ROW_SPACING = 1.1
+macro DEBUG_BROWSER_SCALE = 2.5
+macro DEBUG_BROWSER_CATEGORY_TALENTS = 0
+macro DEBUG_BROWSER_CATEGORY_ICONS = 1
+macro DEBUG_BROWSER_CATEGORY_ABILITIES = 2
+macro DEBUG_BROWSER_CATEGORY_COUNT = 3
+macro DEBUG_BROWSER_COUNT = len(talent_names) if eventPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_TALENTS else (len(debug_browser_icon_strings) if eventPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ICONS else len(debug_browser_heroes))
+
 #--- Fly camera (dev tool) state + tunables ---
 playervar debug_flycam_active = false
 playervar debug_flycam_position
@@ -10,6 +26,7 @@ macro DEBUG_FLYCAM_BOOST_MULTIPLIER = 4     #speed multiplier while holding Abil
 rule "DEBUG - - - Init Workshop Settings":
     debug_spectator_tools = createWorkshopSettingBool("00. Debug", "Spectator Tools (bot selector, asserts, etc.)", true, 0)
 
+
 #--- Element budget + server load readout (host, visible while playing) ---
 rule "DEBUG - - - Element & Load Readout":
     hudText(hostPlayer, null, \
@@ -18,6 +35,9 @@ rule "DEBUG - - - Element & Load Readout":
         HudPosition.ACTUALLY_LEFT, 0, \
         Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN, \
         Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
+
+
+
 
 /*
 rule "Test":
@@ -179,7 +199,7 @@ rule "DEBUG - - - Reset [Talent: Juggernaut] Cooldown With Reload [DEFAULT: OFF]
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.isHoldingButton(Button.RELOAD) == true
 
-    eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] = eventPlayer.totalTimeElapsed - talent_base_cooldowns[Talent.JUGGERNAUT]
+    eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.JUGGERNAUT]
 
 
 rule "Test":
@@ -217,7 +237,7 @@ rule "DEBUG - - - Shop Placement Readout":
         null, HudPosition.ACTUALLY_LEFT, 1, Color.ORANGE, Color.ORANGE, Color.ORANGE, \
         HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
 
-
+/*
 #--- Fly camera: toggle a free-fly noclip on your hero so you can place shops from the air (position/rotation readouts work) ---
 #--- Toggle = Interact + Melee. While flying: Primary = forward (where you look), Secondary = back, Jump = up, Crouch = down, Ability 1 = boost ---
 #--- Primary/Secondary fire are suppressed while flying (still read for thrust); position is forced (so you hover and can still look around) and you are PHASED_OUT (can't die) ---
@@ -253,25 +273,74 @@ rule "DEBUG - - - Toggle Fly Camera (Interact + Melee)":
     waitUntil(eventPlayer.isHoldingButton(Button.INTERACT) == false or eventPlayer.isHoldingButton(Button.MELEE) == false, 99999)
 
 
-#--- Cooldown-on-spawn capture (assistant debug): snapshots the just-bought talent's cooldown math across the spawn window after a purchase ---
-#--- tte ~0 climbing while remain stays high => stale per-player clock; ready=False while the ability is usable => stuck @Condition (w_ow2_rule_condition_chase) ---
-def debug_cooldown_snapshot():
-    @Name "DEBUG - - - [SUBROUTINE] Cooldown Spawn Snapshot"
+#--- Asset browser (dev tool): Crouch + Interact toggles a locked browse mode; Reload flips category (Talents/Icons/Abilities); Q/E cycle within it. Talents come from talent_names and abilities from getAllHeroes() so both always match the live roster; icons are a fixed Icon-enum list ---
+rule "DEBUG - - - Browse Assets HUD (talents / icons / abilities panel)":
+    debug_browser_icon_strings = ["{0}  ARROW_DOWN".format(iconString(Icon.ARROW_DOWN)), "{0}  ARROW_LEFT".format(iconString(Icon.ARROW_LEFT)), "{0}  ARROW_RIGHT".format(iconString(Icon.ARROW_RIGHT)), "{0}  ARROW_UP".format(iconString(Icon.ARROW_UP)), "{0}  ASTERISK".format(iconString(Icon.ASTERISK)), "{0}  BOLT".format(iconString(Icon.BOLT)), "{0}  CHECKMARK".format(iconString(Icon.CHECKMARK)), "{0}  CIRCLE".format(iconString(Icon.CIRCLE)), "{0}  CLUB".format(iconString(Icon.CLUB)), "{0}  DIAMOND".format(iconString(Icon.DIAMOND)), "{0}  DIZZY".format(iconString(Icon.DIZZY)), "{0}  EXCLAMATION_MARK".format(iconString(Icon.EXCLAMATION_MARK)), "{0}  EYE".format(iconString(Icon.EYE)), "{0}  FIRE".format(iconString(Icon.FIRE)), "{0}  FLAG".format(iconString(Icon.FLAG)), "{0}  HALO".format(iconString(Icon.HALO)), "{0}  HAPPY".format(iconString(Icon.HAPPY)), "{0}  HEART".format(iconString(Icon.HEART)), "{0}  MOON".format(iconString(Icon.MOON)), "{0}  NO".format(iconString(Icon.NO)), "{0}  PLUS".format(iconString(Icon.PLUS)), "{0}  POISON".format(iconString(Icon.POISON)), "{0}  POISON_2".format(iconString(Icon.POISON_2)), "{0}  QUESTION_MARK".format(iconString(Icon.QUESTION_MARK)), "{0}  RADIOACTIVE".format(iconString(Icon.RADIOACTIVE)), "{0}  RECYCLE".format(iconString(Icon.RECYCLE)), "{0}  RING_THICK".format(iconString(Icon.RING_THICK)), "{0}  RING_THIN".format(iconString(Icon.RING_THIN)), "{0}  SAD".format(iconString(Icon.SAD)), "{0}  SKULL".format(iconString(Icon.SKULL)), "{0}  SPADE".format(iconString(Icon.SPADE)), "{0}  SPIRAL".format(iconString(Icon.SPIRAL)), "{0}  STOP".format(iconString(Icon.STOP)), "{0}  TRASHCAN".format(iconString(Icon.TRASHCAN)), "{0}  WARNING".format(iconString(Icon.WARNING)), "{0}  CROSS (X)".format(iconString(Icon.CROSS))]
+    debug_browser_heroes = getAllHeroes()
 
-    eventPlayer.debug_cd_end = eventPlayer.talent_trigger_times[eventPlayer.current_talent_replace_or_buy] + talent_base_cooldowns[eventPlayer.current_talent_replace_or_buy] - eventPlayer.talent_ranks[eventPlayer.current_talent_replace_or_buy] * talent_cd_reduction_p_rank[eventPlayer.current_talent_replace_or_buy]
-    hudText(eventPlayer, null, "[t={0}] {1}  trig={2} base={3} tte={4}  remain={5} ready={6} alive={7}".format(evalOnce(round(getTotalTimeElapsed() * 100) / 100), talent_names[eventPlayer.current_talent_replace_or_buy], evalOnce(round(eventPlayer.talent_trigger_times[eventPlayer.current_talent_replace_or_buy] * 100) / 100), talent_base_cooldowns[eventPlayer.current_talent_replace_or_buy], evalOnce(round(eventPlayer.totalTimeElapsed * 100) / 100), evalOnce(round((eventPlayer.debug_cd_end - eventPlayer.totalTimeElapsed) * 100) / 100), evalOnce(eventPlayer.debug_cd_end <= eventPlayer.totalTimeElapsed), evalOnce(eventPlayer.isAlive())), null, HudPosition.ACTUALLY_LEFT, 2, Color.ORANGE, Color.ORANGE, Color.ORANGE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
-    debug_texts.append(getLastCreatedText())
+    #Header: current asset (talent name, icon glyph+enum name, or hero icon+name)
+    createInWorldText(localPlayer if localPlayer.debug_browser_active == true else null, "{0}".format(talent_names[localPlayer.debug_browser_index] if localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_TALENTS else (debug_browser_icon_strings[localPlayer.debug_browser_index] if localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ICONS else "{0}  {1}".format(heroIcon(debug_browser_heroes[localPlayer.debug_browser_index]), debug_browser_heroes[localPlayer.debug_browser_index]))), updateEveryTick(localPlayer.getEyePosition() + HUD_CAM_FWD * DEBUG_BROWSER_DISTANCE + HUD_CAM_UP * (DEBUG_BROWSER_ROW_SPACING * 0.5)), DEBUG_BROWSER_SCALE, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
+
+    #Counter: category, position, and the Reload-to-switch hint
+    createInWorldText(localPlayer if localPlayer.debug_browser_active == true else null, "[{0}]  {1} / {2}  ({3} swaps)".format("TALENTS" if localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_TALENTS else ("ICONS" if localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ICONS else "ABILITIES"), localPlayer.debug_browser_index + 1, len(talent_names) if localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_TALENTS else (len(debug_browser_icon_strings) if localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ICONS else len(debug_browser_heroes)), buttonString(Button.RELOAD)), updateEveryTick(localPlayer.getEyePosition() + HUD_CAM_FWD * DEBUG_BROWSER_DISTANCE + HUD_CAM_UP * (DEBUG_BROWSER_ROW_SPACING * -0.5)), DEBUG_BROWSER_SCALE, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.GRAY, SpecVisibility.ALWAYS)
+
+    #Abilities only: ability icon strings for the current hero, labelled by button
+    createInWorldText(localPlayer if localPlayer.debug_browser_active == true and localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ABILITIES else null, "Primary {0}   Secondary {1}   Ability 1 {2}   Ability 2 {3}".format(abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.PRIMARY_FIRE), abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.SECONDARY_FIRE), abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.ABILITY_1), abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.ABILITY_2)), updateEveryTick(localPlayer.getEyePosition() + HUD_CAM_FWD * DEBUG_BROWSER_DISTANCE + HUD_CAM_UP * (DEBUG_BROWSER_ROW_SPACING * -1.5)), DEBUG_BROWSER_SCALE, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
+
+    createInWorldText(localPlayer if localPlayer.debug_browser_active == true and localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ABILITIES else null, "Ultimate {0}   Reload {1}   Interact {2}   Melee {3}".format(abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.ULTIMATE), abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.RELOAD), abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.INTERACT), abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.MELEE)), updateEveryTick(localPlayer.getEyePosition() + HUD_CAM_FWD * DEBUG_BROWSER_DISTANCE + HUD_CAM_UP * (DEBUG_BROWSER_ROW_SPACING * -2.5)), DEBUG_BROWSER_SCALE, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
+
+    createInWorldText(localPlayer if localPlayer.debug_browser_active == true and localPlayer.debug_browser_category == DEBUG_BROWSER_CATEGORY_ABILITIES else null, "Jump {0}".format(abilityIconString(debug_browser_heroes[localPlayer.debug_browser_index], Button.JUMP)), updateEveryTick(localPlayer.getEyePosition() + HUD_CAM_FWD * DEBUG_BROWSER_DISTANCE + HUD_CAM_UP * (DEBUG_BROWSER_ROW_SPACING * -3.5)), DEBUG_BROWSER_SCALE, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
 
 
-rule "DEBUG - - - [Cooldown] Capture Spawn After Purchase":
+def debug_browser_loop():
+    @Name "DEBUG - - - [SUBROUTINE] Browse Assets (Q = previous, E = next, Reload = swap category)"
+
+    while eventPlayer.debug_browser_active == true:
+        if eventPlayer.isHoldingButton(Button.ULTIMATE) == true:
+            eventPlayer.debug_browser_index = (eventPlayer.debug_browser_index - 1 + DEBUG_BROWSER_COUNT) % DEBUG_BROWSER_COUNT
+            waitUntil(eventPlayer.isHoldingButton(Button.ULTIMATE) == false, 99999)
+        elif eventPlayer.isHoldingButton(Button.ABILITY_2) == true:
+            eventPlayer.debug_browser_index = (eventPlayer.debug_browser_index + 1) % DEBUG_BROWSER_COUNT
+            waitUntil(eventPlayer.isHoldingButton(Button.ABILITY_2) == false, 99999)
+        elif eventPlayer.isHoldingButton(Button.RELOAD) == true:
+            eventPlayer.debug_browser_category = (eventPlayer.debug_browser_category + 1) % DEBUG_BROWSER_CATEGORY_COUNT
+            eventPlayer.debug_browser_index = 0
+            waitUntil(eventPlayer.isHoldingButton(Button.RELOAD) == false, 99999)
+        wait()
+
+
+rule "DEBUG - - - Toggle Browse Assets (Crouch + Interact)":
     @Event eachPlayer
     @Condition debug_spectator_tools == true
-    @Condition not eventPlayer.isDummy()
-    @Condition eventPlayer.debug_cooldown_capture == true
+    @Condition eventPlayer == hostPlayer
+    @Condition eventPlayer.isHoldingButton(Button.CROUCH) == true
+    @Condition eventPlayer.isHoldingButton(Button.INTERACT) == true
 
-    eventPlayer.debug_cd_sample_i = 0
-    while eventPlayer.debug_cd_sample_i < 10:
-        debug_cooldown_snapshot()
-        wait(0.5)
-        eventPlayer.debug_cd_sample_i += 1
-    eventPlayer.debug_cooldown_capture = false
+    eventPlayer.debug_browser_active = not eventPlayer.debug_browser_active
+    if eventPlayer.debug_browser_active == true:
+        eventPlayer.debug_browser_index = 0
+        eventPlayer.debug_browser_category = DEBUG_BROWSER_CATEGORY_TALENTS
+        eventPlayer.setStatusEffect(null, Status.ROOTED, 9999)
+        eventPlayer.setStatusEffect(null, Status.PHASED_OUT, 9999)
+        eventPlayer.disallowButton(Button.PRIMARY_FIRE)
+        eventPlayer.disallowButton(Button.SECONDARY_FIRE)
+        eventPlayer.disallowButton(Button.ABILITY_1)
+        eventPlayer.disallowButton(Button.ABILITY_2)
+        eventPlayer.disallowButton(Button.ULTIMATE)
+        eventPlayer.disallowButton(Button.MELEE)
+        eventPlayer.disallowButton(Button.JUMP)
+        eventPlayer.disallowButton(Button.RELOAD)
+        async(debug_browser_loop, AsyncBehavior.NOOP)
+    else:
+        eventPlayer.clearStatusEffect(Status.ROOTED)
+        eventPlayer.clearStatusEffect(Status.PHASED_OUT)
+        eventPlayer.allowButton(Button.PRIMARY_FIRE)
+        eventPlayer.allowButton(Button.SECONDARY_FIRE)
+        eventPlayer.allowButton(Button.ABILITY_1)
+        eventPlayer.allowButton(Button.ABILITY_2)
+        eventPlayer.allowButton(Button.ULTIMATE)
+        eventPlayer.allowButton(Button.MELEE)
+        eventPlayer.allowButton(Button.JUMP)
+        eventPlayer.allowButton(Button.RELOAD)
+    waitUntil(eventPlayer.isHoldingButton(Button.CROUCH) == false or eventPlayer.isHoldingButton(Button.INTERACT) == false, 99999)
+*/

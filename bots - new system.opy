@@ -87,6 +87,7 @@ subroutine bot_sm_idle
 subroutine bot_sm_combat
 subroutine bot_sm_searching
 subroutine bot_combat_scan
+subroutine bot_start_facing
 
 
 # ============================================================
@@ -107,16 +108,9 @@ rule "BOT - - - Init":
     @Event eachPlayer
     @Condition eventPlayer.isDummy() == true
 
-    eventPlayer.stats = [100, 166.666, 75, 0, 0, 1, 1, 0, 100, 0]
+    eventPlayer.stats = [100, 181.818, 75, 0, 0, 1, 1, 0, 100, 0]
     eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
     eventPlayer.reaper_has_respawned_once = false
-
-    #--- Single startFacing with reevaluation — never stopped/restarted ---
-    # In combat, faces bot_combat_target body center directly via reevaluation.
-    # Otherwise faces bot_face_target (set by combat reaction + searching).
-    # When very close (< 0.5m) to bot_face_target, faces horizontally to avoid looking at feet.
-    eventPlayer.bot_face_target = eventPlayer.getPosition() + eventPlayer.getFacingDirection()
-    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] / 2, 0) if eventPlayer.bot_state_id == BotState.COMBAT else vect(eventPlayer.bot_face_target.x, eventPlayer.getEyePosition().y if distance(eventPlayer.getPosition(), eventPlayer.bot_face_target) < 0.5 else eventPlayer.bot_face_target.y, eventPlayer.bot_face_target.z)), BOT_TURN_SPEED, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
 
     #--- Single startThrottleInDirection with reevaluation — never stopped/restarted ---
     # In combat, moves toward bot_combat_target. Otherwise, toward bot_patrol_destination.
@@ -164,6 +158,16 @@ def bot_state_machine():
 
 
 # ============================================================
+# FACING — on during combat/searching, off (engine spawn facing) when idle
+# ============================================================
+
+def bot_start_facing():
+    @Name "BOT - - - [SUBROUTINE] Start Facing"
+
+    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] / 2, 0) if eventPlayer.bot_state_id == BotState.COMBAT else vect(eventPlayer.bot_face_target.x, eventPlayer.getEyePosition().y if distance(eventPlayer.getPosition(), eventPlayer.bot_face_target) < 0.5 else eventPlayer.bot_face_target.y, eventPlayer.bot_face_target.z)), BOT_TURN_SPEED, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
+
+
+# ============================================================
 # STATE: IDLE
 # ============================================================
 
@@ -171,6 +175,7 @@ def bot_sm_idle():
     @Name "BOT - - - [STATE] Idle"
 
     #--- Stand still until an external state change (combat scan / got shot / death) wakes us ---
+    eventPlayer.stopFacing()
     eventPlayer.bot_throttle_paused = true
     waitUntil(eventPlayer.bot_state_id != BotState.IDLE, 99999)
 
@@ -187,6 +192,8 @@ def bot_sm_combat():
         eventPlayer.bot_combat_target = null
         eventPlayer.bot_state_id = BotState.IDLE
         return
+
+    bot_start_facing()
 
     #--- Reaction time (0.25s if shot, skip if scanned — awareness timer already waited 1s) ---
     eventPlayer.bot_face_target = eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] / 2, 0)

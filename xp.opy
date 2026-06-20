@@ -73,11 +73,11 @@ rule "XP SYSTEM - - - XP Orbs":
                 #if the player has alchemist:
                 if player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] > 0 and player_picking_up_orb.amount_of_health_potions < 3 and ALCHEMIST_PROC_CHANCE >= 66:
                     if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0:
-                        player_picking_up_orb.health_potion_cooldown_memory = player_picking_up_orb.totalTimeElapsed - player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS]
-                        player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.HEALTH_POTIONS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
+                        player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS]
+                        player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.HEALTH_POTIONS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
                     #elif player_picking_up_orb.talent_ranks[Talent.POISON_VIALS] > 0:
-                        #player_picking_up_orb.health_potion_cooldown_memory = player_picking_up_orb.totalTimeElapsed - player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS]
-                        #player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.POISON_VIALS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
+                        #player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS]
+                        #player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.POISON_VIALS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
                     wait()
                     smallMessage(player_picking_up_orb, "{0} +1 {1}".format(iconString(Icon.RADIOACTIVE), "Health Potion!" if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0 else "Poison Vial!"))
 
@@ -88,7 +88,7 @@ rule "XP SYSTEM - - - XP Orbs":
                     
                 #if the player has shadowstep:
                 if player_picking_up_orb.talent_ranks[Talent.SHADOWSTEP] > 0:
-                    player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = player_picking_up_orb.totalTimeElapsed - talent_base_cooldowns[Talent.SHADOWSTEP]
+                    player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.SHADOWSTEP]
                 
                 #remove from array by index
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
