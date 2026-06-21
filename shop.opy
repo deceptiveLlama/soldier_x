@@ -19,8 +19,11 @@
 #!defineMember adrenaline_rush_effect_id2 variable[215]
 #!defineMember adrenaline_rush_effect_id3 variable[216]
 #!defineMember jetpack_beam_effect_id variable[217]
+#--- Scratch for validate_talent_removal's dependent loop (atomic, no waits) ---
+#!defineMember current_removal_dependent variable[218]
 
 #Global variables
+globalvar talent_dependent_index
 
 #Player variables
 playervar health_pool_id_or_hot_id
@@ -50,8 +53,9 @@ subroutine health_regen_heal_over_time
 subroutine open_shop
 subroutine update_player_with_most_talent
 subroutine buy_or_upgrade_talent
+subroutine validate_talent_removal
 subroutine buy_bloodthirst
-subroutine buy_purity_field
+subroutine buy_immunity
 subroutine buy_cybernetics
 subroutine buy_soul_harvest
 subroutine buy_poisonous_dagger
@@ -310,6 +314,7 @@ def open_shop():
     playEffect(eventPlayer, DynamicEffect.SYMMETRA_TELEPORTER_REAPPEAR_SOUND, Color.TEAM_1, shop_location.getPosition(), 100)
 
 rule "SHOP - - - Toggle Controller Layout":
+    @Disabled
     @Event eachPlayer
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.browsing_shop == true
@@ -400,7 +405,7 @@ rule "SHOP - - - Buy Talent":
         return
     if eventPlayer.replacing_talent_show_bought_talents == true:
         eventPlayer.current_talent_replace_or_buy = eventPlayer.bought_talents[eventPlayer.selected_bought_talent]
-        buy_or_upgrade_talent()
+        validate_talent_removal()
         if eventPlayer.replacing_talent_cancelled == true:
             eventPlayer.startCamera(shop_location, eventPlayer.selected_talent_position, 12)
             playEffect(eventPlayer, DynamicEffect.DEBUFF_IMPACT_SOUND, Color.TEAM_1, shop_location.getPosition(), 100)
@@ -408,6 +413,7 @@ rule "SHOP - - - Buy Talent":
             eventPlayer.replacing_talent_show_bought_talents = false
             eventPlayer.replacing_talent_cancelled = false
             return
+        buy_or_upgrade_talent()
         eventPlayer.amount_of_talents_purchased -= eventPlayer.talent_ranks[eventPlayer.current_talent_replace_or_buy]
         update_player_with_most_talent()
         #Remove the talent from talent_ranks
@@ -497,13 +503,28 @@ rule "SHOP - - - Reset Shop Camera":
 
     eventPlayer.startCamera(shop_location, eventPlayer.selected_talent_position, 0)
 
+def validate_talent_removal():
+    @Name "TALENT SYSTEM - - - [SUBROUTINE] Validate Talent Removal (prerequisites)"
+    #--- Block replacing a talent with one that needs it (the new talent would have no owned prerequisite left) ---
+    if eventPlayer.current_talent_replace_or_buy in talent_requirements[eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop]] and len([req for req in talent_requirements[eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop]] if req != eventPlayer.current_talent_replace_or_buy and eventPlayer.talent_ranks[req] > 0]) == 0:
+        smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[eventPlayer.current_talent_replace_or_buy], talent_names[eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop]]))
+        eventPlayer.replacing_talent_cancelled = true
+        return
+    #--- Block removing a talent an owned talent still depends on (its last owned prerequisite) ---
+    for talent_dependent_index in range(len(talent_dependents[eventPlayer.current_talent_replace_or_buy])):
+        eventPlayer.current_removal_dependent = talent_dependents[eventPlayer.current_talent_replace_or_buy][talent_dependent_index]
+        if eventPlayer.talent_ranks[eventPlayer.current_removal_dependent] > 0 and len([req for req in talent_requirements[eventPlayer.current_removal_dependent] if req != eventPlayer.current_talent_replace_or_buy and eventPlayer.talent_ranks[req] > 0]) == 0:
+            smallMessage(eventPlayer, "Need to remove {0} first!".format(talent_names[eventPlayer.current_removal_dependent]))
+            eventPlayer.replacing_talent_cancelled = true
+            return
+
 def buy_or_upgrade_talent():
     @Name "SHOP - - - [SUBROUTINE] Buy Or Upgrade Talent"
     
     if eventPlayer.current_talent_replace_or_buy == [Talent.BLOODTHIRST]:
         buy_bloodthirst()
-    elif eventPlayer.current_talent_replace_or_buy == [Talent.PURITY_FIELD]:
-        buy_purity_field()
+    elif eventPlayer.current_talent_replace_or_buy == [Talent.IMMUNITY]:
+        buy_immunity()
     elif eventPlayer.current_talent_replace_or_buy == [Talent.CYBERNETICS]:
         buy_cybernetics()
     elif eventPlayer.current_talent_replace_or_buy == [Talent.SOUL_HARVEST]:
@@ -568,21 +589,21 @@ def buy_bloodthirst():
     if eventPlayer.talent_ranks[Talent.BLOODTHIRST] == 1:
         eventPlayer.talents_you_do_not_have.remove(Talent.BLOODTHIRST)
 
-def buy_purity_field():
-    @Name "TALENT SYSTEM - - - [TALENT 1: PURITY FIELD] [SUBROUTINE] Buy Purity Field"
+def buy_immunity():
+    @Name "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] [SUBROUTINE] Buy Immunity"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        eventPlayer.talents_you_do_not_have.append(Talent.PURITY_FIELD)
-        #Group A exclusivity: removing Purity Field frees the Ultimate button, so Berserker becomes available again
+        eventPlayer.talents_you_do_not_have.append(Talent.IMMUNITY)
+        #Group A exclusivity: removing Immunity frees the Ultimate button, so Berserker becomes available again
         eventPlayer.talents_you_do_not_have.append(Talent.BERSERKER)
-        stopChasingVariable(eventPlayer.purity_field_duration)
-        eventPlayer.purity_field_duration = 0
+        stopChasingVariable(eventPlayer.immunity_duration)
+        eventPlayer.immunity_duration = 0
         return
-    if eventPlayer.talent_ranks[Talent.PURITY_FIELD] == 1:
-        eventPlayer.talents_you_do_not_have.remove(Talent.PURITY_FIELD)
-        #Group A exclusivity: Purity Field and Berserker share the Ultimate button, so owning one removes the other from the pool
+    if eventPlayer.talent_ranks[Talent.IMMUNITY] == 1:
+        eventPlayer.talents_you_do_not_have.remove(Talent.IMMUNITY)
+        #Group A exclusivity: Immunity and Berserker share the Ultimate button, so owning one removes the other from the pool
         eventPlayer.talents_you_do_not_have.remove(Talent.BERSERKER)
-        eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.PURITY_FIELD]
+        eventPlayer.talent_trigger_times[Talent.IMMUNITY] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.IMMUNITY]
 
 def buy_cybernetics():
     @Name "TALENT SYSTEM - - - [TALENT 2: CYBERNETICS] [SUBROUTINE] Buy Cybernetics (hit_by_ability[2] is borrowed by talent: juggernaut)"
@@ -628,16 +649,6 @@ def buy_stealth():
         destroyEffect(eventPlayer.stealth_effect_id2)
         destroyEffect(eventPlayer.stealth_sound_id)
         destroyEffect(eventPlayer.stealth_stun_text_id)
-        #If you are trying to replace stealth with poisonous dagger
-        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == [Talent.POISONOUS_DAGGER]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[5], talent_names[Talent.POISONOUS_DAGGER]))
-            goto lbl_0
-        #If you are trying to remove stealth when you have poisonous dagger
-        if eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] > 0:
-            smallMessage(eventPlayer, "Need to remove {0} first!".format(talent_names[5]))
-            lbl_0:
-            eventPlayer.replacing_talent_cancelled = true
-            return
         eventPlayer.talents_you_do_not_have.append(Talent.STEALTH)
         eventPlayer.talents_you_do_not_have.remove(Talent.POISONOUS_DAGGER)
         return
@@ -706,14 +717,6 @@ def buy_railgun():
     @Name "TALENT SYSTEM - - - [TALENT 9: RAILGUN] [SUBROUTINE] Buy Railgun"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == [16]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.RAILGUN], talent_names[Talent.OVERCLOCK]))
-            goto lbl_0
-        if eventPlayer.talent_ranks[Talent.OVERCLOCK] > 0:
-            smallMessage(eventPlayer, "Need to remove {0} first!".format(talent_names[Talent.OVERCLOCK]))
-            lbl_0:
-            eventPlayer.replacing_talent_cancelled = true
-            return
         stopChasingVariable(eventPlayer.railgun_discharge)
         destroyEffect(eventPlayer.railgun_charge_effect_id)
         destroyEffect(eventPlayer.railgun_charge_sound)
@@ -833,14 +836,6 @@ def buy_health_potions():
     @Name "TALENT SYSTEM - - - [TALENT 14: HEALTH POTIONS] [SUBROUTINE] Buy Health Potions"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == [26]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.HEALTH_POTIONS], talent_names[Talent.ALCHEMIST]))
-            goto lbl_0
-        if eventPlayer.talent_ranks[Talent.ALCHEMIST] > 0:
-            smallMessage(eventPlayer, "Need to remove {0} Crazy Alchemist first!".format(iconString(Icon.RADIOACTIVE)))
-            lbl_0:
-            eventPlayer.replacing_talent_cancelled = true
-            return
         eventPlayer.amount_of_health_potions = 0
         eventPlayer.talents_you_do_not_have.append(Talent.HEALTH_POTIONS)
         #disabled because poison vials are disabled
@@ -908,18 +903,10 @@ def buy_berserker():
     @Name "TALENT SYSTEM - - - [TALENT 20: BERSERKER] [SUBROUTINE] Buy Berserker"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == [0]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.BERSERKER], talent_names[Talent.BLOODTHIRST]))
-            goto lbl_0
-        if eventPlayer.talent_ranks[Talent.BLOODTHIRST] > 0:
-            smallMessage(eventPlayer, "Need to remove {0} Bloodthirst first!".format(abilityIconString(Hero.SIGMA, Button.ABILITY_1)))
-            lbl_0:
-            eventPlayer.replacing_talent_cancelled = true
-            return
         eventPlayer.talents_you_do_not_have.append(Talent.BERSERKER)
         eventPlayer.talents_you_do_not_have.remove(Talent.BLOODTHIRST)
-        #Group A exclusivity: removing Berserker frees the Ultimate button, so Purity Field becomes available again
-        eventPlayer.talents_you_do_not_have.append(Talent.PURITY_FIELD)
+        #Group A exclusivity: removing Berserker frees the Ultimate button, so Immunity becomes available again
+        eventPlayer.talents_you_do_not_have.append(Talent.IMMUNITY)
         destroyEffect(eventPlayer.berserker_team1_effect_id)
         destroyEffect(eventPlayer.berserker_team2_effect_id)
         destroyEffect(eventPlayer.berserker_sound_id)
@@ -935,22 +922,14 @@ def buy_berserker():
         createEffect(getAllPlayers() if eventPlayer.is_using_ability[Talent.BERSERKER] == true else null, Effect.WINSTON_PRIMAL_RAGE_SOUND, Color.WHITE, eventPlayer, 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
         eventPlayer.berserker_sound_id = getLastCreatedEntity()
         eventPlayer.talents_you_do_not_have.remove(Talent.BERSERKER)
-        #Group A exclusivity: Berserker and Purity Field share the Ultimate button, so owning one removes the other from the pool
-        eventPlayer.talents_you_do_not_have.remove(Talent.PURITY_FIELD)
+        #Group A exclusivity: Berserker and Immunity share the Ultimate button, so owning one removes the other from the pool
+        eventPlayer.talents_you_do_not_have.remove(Talent.IMMUNITY)
         eventPlayer.talents_you_do_not_have.append(Talent.BLOODTHIRST)
 
 def buy_fireball():
     @Name "TALENT SYSTEM - - - [TALENT 21: FIREBALL] [SUBROUTINE] Buy Fireball"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        if eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop] == [24]:
-            smallMessage(eventPlayer, "You need {0} for {1}!".format(talent_names[Talent.FIREBALL], talent_names[Talent.PYROMANIAC]))
-            goto lbl_0
-        if eventPlayer.talent_ranks[Talent.PYROMANIAC] > 0:
-            smallMessage(eventPlayer, "Need to remove {0} Pyromaniac first!".format(('<tx0C0000000000333A>')))
-            lbl_0:
-            eventPlayer.replacing_talent_cancelled = true
-            return
         eventPlayer.fireball_position = null
         #Disabled because Juggernaut disabled
         #eventPlayer.talents_you_do_not_have.append(Talent.JUGGERNAUT)

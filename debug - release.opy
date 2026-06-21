@@ -70,7 +70,7 @@ globalvar debug_lifesteal_ammo = createWorkshopSettingInt("03. Talents (Use at y
 globalvar debug_overclock = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Overclock", 0, 0, 5, 0)
 globalvar debug_poisonous_dagger = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Poisonous Dagger", 0, 0, 5, 0)
 globalvar debug_grim_reaper = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Grim_reaper", 0, 0, 5, 0)
-globalvar debug_purity_field = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Purity Field", 0, 0, 5, 0)
+globalvar debug_immunity = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Immunity", 0, 0, 5, 0)
 globalvar debug_pyromaniac = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Pyromaniac", 0, 0, 5, 0)
 globalvar debug_railgun = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Railgun", 0, 0, 5, 0)
 #globalvar debug_adrenaline_rush = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Adrenaline Rush", 0, 0, 5, 0)
@@ -205,12 +205,12 @@ def buy_debug_talents():
         eventPlayer.talent_ranks[Talent.BLOODTHIRST] = debug_bloodthirst
         eventPlayer.amount_of_talents_purchased += debug_bloodthirst
         */
-    if debug_purity_field > 0:
-        eventPlayer.talent_ranks[Talent.PURITY_FIELD] = 1
-        eventPlayer.bought_talents.append(Talent.PURITY_FIELD)
-        buy_purity_field()
-        eventPlayer.talent_ranks[Talent.PURITY_FIELD] = debug_purity_field
-        eventPlayer.amount_of_talents_purchased += debug_purity_field
+    if debug_immunity > 0:
+        eventPlayer.talent_ranks[Talent.IMMUNITY] = 1
+        eventPlayer.bought_talents.append(Talent.IMMUNITY)
+        buy_immunity()
+        eventPlayer.talent_ranks[Talent.IMMUNITY] = debug_immunity
+        eventPlayer.amount_of_talents_purchased += debug_immunity
         /*
     if debug_juggernaut > 0:
         eventPlayer.talent_ranks[Talent.JUGGERNAUT] = 1

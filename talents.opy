@@ -6,7 +6,7 @@
 #!defineMember bloodthirst_remaining_heal_amount variable[102]
 #!defineMember bloodthirst_total_heal_amount variable[103]
 #!defineMember bloodthirst_decay_per_second variable[104]
-#!defineMember purity_field_position variable[105]
+#!defineMember immunity_position variable[105]
 #!defineMember health_potion_1_timestamp variable[106]
 #!defineMember health_potion_2_timestamp variable[107]
 #!defineMember health_potion_3_timestamp variable[108]
@@ -88,23 +88,23 @@ def bloodthirst_effects():
     destroyEffect(eventPlayer.player_temp_effects[45])
     destroyEffect(eventPlayer.player_temp_effects[46])
 
-rule "TALENT SYSTEM - - - [TALENT 1: PURITY FIELD] Use Purity Field":
+rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     @Event eachPlayer
     @Condition not eventPlayer.isDummy()
-    @Condition eventPlayer.talent_ranks[Talent.PURITY_FIELD] > 0
+    @Condition eventPlayer.talent_ranks[Talent.IMMUNITY] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] + talent_base_cooldowns[Talent.PURITY_FIELD] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_trigger_times[Talent.IMMUNITY] + talent_base_cooldowns[Talent.IMMUNITY] <= getTotalTimeElapsed()
     @Condition eventPlayer.isHoldingButton(Button.ULTIMATE) == true
     #@Condition eventPlayer.is_using_ability[Talent.GUNSLINGER] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition eventPlayer.railgun_charge == 0
     
-    eventPlayer.talent_trigger_times[Talent.PURITY_FIELD] = getTotalTimeElapsed()
-    eventPlayer.is_using_ability[Talent.PURITY_FIELD] = true
-    eventPlayer.purity_field_duration = 100
-    chase(eventPlayer.purity_field_duration, 0, rate=100 / PURITY_FIELD_DURATION, ChaseReeval.DESTINATION_AND_RATE)
+    eventPlayer.talent_trigger_times[Talent.IMMUNITY] = getTotalTimeElapsed()
+    eventPlayer.is_using_ability[Talent.IMMUNITY] = true
+    eventPlayer.immunity_duration = 100
+    chase(eventPlayer.immunity_duration, 0, rate=100 / IMMUNITY_DURATION, ChaseReeval.DESTINATION_AND_RATE)
     #A wait for juggernaut (and maybe more abilities) to run their "end code" first before this triggers
     wait()
     eventPlayer.disallowButton(Button.PRIMARY_FIRE)
@@ -121,25 +121,25 @@ rule "TALENT SYSTEM - - - [TALENT 1: PURITY FIELD] Use Purity Field":
     eventPlayer.clearStatusEffect(Status.KNOCKED_DOWN)
     createEffect(getAllPlayers() if eventPlayer.browsing_shop == false else null, Effect.ANA_BIOTIC_GRENADE_INCREASED_HEALING, Color.TEAM_1, eventPlayer, 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
     eventPlayer.player_temp_effects[53] = getLastCreatedEntity()
-    createEffect(getAllPlayers().exclude(eventPlayer) if PURITY_EFFECTS_VISIBLE else null, Effect.SPHERE, Color.WHITE, updateEveryTick(eventPlayer.getPosition() + Vector.UP), GIGACHAD_SCALED_SIZE, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
+    createEffect(getAllPlayers().exclude(eventPlayer) if IMMUNITY_EFFECTS_VISIBLE else null, Effect.SPHERE, Color.WHITE, updateEveryTick(eventPlayer.getPosition() + Vector.UP), GIGACHAD_SCALED_SIZE, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
     eventPlayer.player_temp_effects[47] = getLastCreatedEntity()
-    createEffect(getAllPlayers().exclude(eventPlayer) if PURITY_EFFECTS_VISIBLE else null, Effect.SPHERE, Color.YELLOW, updateEveryTick(eventPlayer.getPosition() + Vector.UP), GIGACHAD_SCALED_SIZE, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
+    createEffect(getAllPlayers().exclude(eventPlayer) if IMMUNITY_EFFECTS_VISIBLE else null, Effect.SPHERE, Color.YELLOW, updateEveryTick(eventPlayer.getPosition() + Vector.UP), GIGACHAD_SCALED_SIZE, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
     eventPlayer.player_temp_effects[48] = getLastCreatedEntity()
-    createEffect(getAllPlayers().exclude(eventPlayer) if PURITY_EFFECTS_VISIBLE else null, Effect.GOOD_AURA, Color.WHITE, updateEveryTick(eventPlayer.getPosition() + Vector.UP), GIGACHAD_SCALED_SIZE, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
+    createEffect(getAllPlayers().exclude(eventPlayer) if IMMUNITY_EFFECTS_VISIBLE else null, Effect.GOOD_AURA, Color.WHITE, updateEveryTick(eventPlayer.getPosition() + Vector.UP), GIGACHAD_SCALED_SIZE, EffectReeval.VISIBILITY_POSITION_RADIUS_AND_COLOR)
     eventPlayer.player_temp_effects[49] = getLastCreatedEntity()
     createEffect(getAllPlayers() if eventPlayer.browsing_shop == false else null, Effect.BAPTISTE_IMMORTALITY_FIELD_PROTECTED, Color.TEAM_1, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
     eventPlayer.player_temp_effects[50] = getLastCreatedEntity()
     createEffect(getAllPlayers() if eventPlayer.browsing_shop == false else null, Effect.BAPTISTE_IMMORTALITY_FIELD_PROTECTED_SOUND, Color.TEAM_1, eventPlayer.getPosition(), 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
     eventPlayer.player_temp_effects[51] = getLastCreatedEntity()
-    eventPlayer.setHealingReceived(PURITY_FIELD_HEALING_RECEIVED)
+    eventPlayer.setHealingReceived(IMMUNITY_HEALING_RECEIVED)
     #eventPlayer.player_temp_effects[52] = getLastCreatedText()
     eventPlayer.setKnockbackReceived(0)
     recalculate_player_speed()
     eventPlayer.in_combat = 0
     wait(0.5)
-    waitUntil(eventPlayer.isHoldingButton(Button.ULTIMATE) or eventPlayer.isDead() or eventPlayer.browsing_shop == true, PURITY_FIELD_DURATION - 0.5)
-    stopChasingVariable(eventPlayer.purity_field_duration)
-    eventPlayer.purity_field_duration = 0
+    waitUntil(eventPlayer.isHoldingButton(Button.ULTIMATE) or eventPlayer.isDead() or eventPlayer.browsing_shop == true, IMMUNITY_DURATION - 0.5)
+    stopChasingVariable(eventPlayer.immunity_duration)
+    eventPlayer.immunity_duration = 0
     destroyEffect(eventPlayer.player_temp_effects[47])
     destroyEffect(eventPlayer.player_temp_effects[48])
     destroyEffect(eventPlayer.player_temp_effects[49])
@@ -156,7 +156,7 @@ rule "TALENT SYSTEM - - - [TALENT 1: PURITY FIELD] Use Purity Field":
     eventPlayer.setHealingReceived(100)
     destroyEffect(eventPlayer.player_temp_effects[53])
     eventPlayer.setKnockbackReceived(eventPlayer.stats[Stat.KNOCKBACK_RECEIVED])
-    eventPlayer.is_using_ability[Talent.PURITY_FIELD] = false
+    eventPlayer.is_using_ability[Talent.IMMUNITY] = false
     recalculate_damage_received()
     recalculate_player_speed()
     waitUntil(eventPlayer.browsing_shop == false, 99999)
@@ -199,7 +199,7 @@ def in_stealth():
     playEffect(getAllPlayers(), DynamicEffect.MOIRA_FADE_DISAPPEAR_SOUND, Color.TEAM_1, eventPlayer.getPosition(), 100)
     eventPlayer.is_using_ability[Talent.STEALTH] = true
     while eventPlayer.entering_stealth_timer > 0:
-        eventPlayer.current_stealth_target = sorted([player for player in eventPlayer.getRealPlayersInViewAngle(Team.ALL, 45) if player != eventPlayer and player.isAlive() == true and player.is_using_ability[Talent.STEALTH] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.is_using_ability[Talent.PURITY_FIELD] == false and player.browsing_shop == false and isInLoS(eventPlayer, player, BarrierLos.PASS_THROUGH_BARRIERS) == true], lambda player: distance(eventPlayer.getPosition(), player.getPosition()))[0]
+        eventPlayer.current_stealth_target = sorted([player for player in eventPlayer.getRealPlayersInViewAngle(Team.ALL, 45) if player != eventPlayer and player.isAlive() == true and player.is_using_ability[Talent.STEALTH] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.is_using_ability[Talent.IMMUNITY] == false and player.browsing_shop == false and isInLoS(eventPlayer, player, BarrierLos.PASS_THROUGH_BARRIERS) == true], lambda player: distance(eventPlayer.getPosition(), player.getPosition()))[0]
         wait()
     waitUntil(eventPlayer.entering_stealth_timer == 0, 99999)
     if eventPlayer.is_using_ability[Talent.STEALTH] == true:
@@ -227,7 +227,7 @@ rule "TALENT SYSTEM - - - [TALENT ##: POISONOUS DAGGER] Hit By Poisonous Dagger"
     eventPlayer.poisonous_dagger_sound_id = getLastCreatedEntity()
 
     while eventPlayer.poisonous_dagger_attackers[0] != null:
-        waitUntil(eventPlayer.isDead() or eventPlayer.browsing_shop == true or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true or eventPlayer.is_using_ability[Talent.BANDAGE] == true or eventPlayer.poisonous_dagger_timestamp[0] < getTotalTimeElapsed() - POISONOUS_DAGGER_DURATION, 99999)
+        waitUntil(eventPlayer.isDead() or eventPlayer.browsing_shop == true or eventPlayer.is_using_ability[Talent.IMMUNITY] == true or eventPlayer.is_using_ability[Talent.BANDAGE] == true or eventPlayer.poisonous_dagger_timestamp[0] < getTotalTimeElapsed() - POISONOUS_DAGGER_DURATION, 99999)
 
         if eventPlayer.poisonous_dagger_timestamp[0] < getTotalTimeElapsed() - POISONOUS_DAGGER_DURATION:
             damage(eventPlayer, eventPlayer.poisonous_dagger_attackers[0], POISONOUS_DAGGER_DAMAGE)
@@ -282,7 +282,7 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     @Condition eventPlayer.hasStatusEffect(Status.FROZEN) == false
     @Condition eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.BANDAGE] == false
     @Condition eventPlayer.isHoldingButton(Button.INTERACT) == true
     #@Condition eventPlayer.isCommunicatingEmote() == false
@@ -312,7 +312,7 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     eventPlayer.startForcingThrottle(0, 0, 0, 0, 0, 0)
     eventPlayer.applyImpulse(directionTowards(eventPlayer.getPosition(), eventPlayer.getPosition() + worldVector(vect(0, 1, 0), eventPlayer, Transform.ROTATION)), 5, Relativity.TO_WORLD, Impulse.INCORPORATE_CONTRARY_MOTION)
     wait(0.067)
-    waitUntil(eventPlayer.isDead() or eventPlayer.isOnGround() or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true, 99999)
+    waitUntil(eventPlayer.isDead() or eventPlayer.isOnGround() or eventPlayer.is_using_ability[Talent.IMMUNITY] == true, 99999)
     eventPlayer.has_hit_the_ground = true
     eventPlayer.startCamera(eventPlayer.getEyePosition() + worldVector(vect(0, 0, 0.333), eventPlayer, Transform.ROTATION) if eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100 else eventPlayer.getEyePosition() + (worldVector(vect(0.5 if ((eventPlayer.getSpeedInDirection(directionTowards(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + worldVector(vect(-1, 0, 0), eventPlayer, Transform.ROTATION)))) / 4) * 0.5 > 0.5 else (-0.5 if ((eventPlayer.getSpeedInDirection(directionTowards(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + worldVector(vect(-1, 0, 0), eventPlayer, Transform.ROTATION)))) / 4) * 0.5 < -0.5 else eventPlayer.getSpeedInDirection(directionTowards(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + worldVector(vect(-1, 0, 0), eventPlayer, Transform.ROTATION)))) / 4, 0.333, 0), eventPlayer, Transform.ROTATION)), raycast(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + eventPlayer.getFacingDirection(), getAllPlayers(), eventPlayer, true).getHitPosition() if eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100 else eventPlayer.getEyePosition() + worldVector(vect(0, 0.25, 3), eventPlayer, Transform.ROTATION), 30 if eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100 else 12)
     eventPlayer.startFacing(angleToDirection(eventPlayer.getHorizontalFacingAngle() + 0.4 if eventPlayer.getSpeedInDirection(directionTowards(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + worldVector(vect(1, 0, 0), eventPlayer, Transform.ROTATION))) > 3.9 * eventPlayer.stats[Stat.SPEED] / 100 else eventPlayer.getHorizontalFacingAngle() - 0.4 if eventPlayer.getSpeedInDirection(directionTowards(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + worldVector(vect(1, 0, 0), eventPlayer, Transform.ROTATION))) < -3.9 * eventPlayer.stats[Stat.SPEED] / 100 else eventPlayer.getHorizontalFacingAngle(), 0), 100, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
@@ -320,7 +320,7 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     waitUntil(eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] <= getTotalTimeElapsed() + 59.4, getTotalTimeElapsed() + 59.4)
     eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] = getTotalTimeElapsed()
     eventPlayer.has_hit_the_ground = true
-    if eventPlayer.isDead() or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true:
+    if eventPlayer.isDead() or eventPlayer.is_using_ability[Talent.IMMUNITY] == true:
         goto lbl_0
     async(cancel_ability, AsyncBehavior.NOOP)
     async(juggernaut_effects, AsyncBehavior.NOOP)
@@ -329,23 +329,23 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     eventPlayer.startForcingThrottle(1, 1, 0, 0, 0, 0.25)
     eventPlayer.juggernaut_charge = 10
     waitUntil(eventPlayer.getSpeed() > 14 * eventPlayer.stats[Stat.SPEED] / 100, 1)
-    while eventPlayer.isAlive() and eventPlayer.juggernaut_charge > 0 and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false and eventPlayer.talent_counter_or_position_etc[6] == null and (eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() > 14 * eventPlayer.stats[Stat.SPEED] / 100 or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 >= getTotalTimeElapsed()):
+    while eventPlayer.isAlive() and eventPlayer.juggernaut_charge > 0 and eventPlayer.is_using_ability[Talent.IMMUNITY] == false and eventPlayer.talent_counter_or_position_etc[6] == null and (eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() > 14 * eventPlayer.stats[Stat.SPEED] / 100 or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 >= getTotalTimeElapsed()):
         #Pick up target
-        (((sorted([player for player in getPlayersInRadius(eventPlayer.getPosition() + worldVector(vect(0, 1, 2.5), eventPlayer, Transform.ROTATION), 5, Team.ALL, LosCheck.OFF) if eventPlayer.isInViewAngle(player, 45) and isInLoS(eventPlayer.getEyePosition() + Vector.DOWN, player.getEyePosition() + Vector.DOWN, BarrierLos.PASS_THROUGH_BARRIERS) and player.getPosition().y < (eventPlayer.getEyePosition() + Vector.UP).y and player.getEyePosition().y > eventPlayer.getPosition().y and distance(eventPlayer.getPosition() + Vector.UP, player.getPosition() + Vector.UP) < 3 and player != eventPlayer and player.isAlive() and player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false], lambda i: distance(eventPlayer.getPosition() + Vector.UP, i.getPosition() + Vector.UP)))[0]).hit_by_talent)[6] = eventPlayer
+        (((sorted([player for player in getPlayersInRadius(eventPlayer.getPosition() + worldVector(vect(0, 1, 2.5), eventPlayer, Transform.ROTATION), 5, Team.ALL, LosCheck.OFF) if eventPlayer.isInViewAngle(player, 45) and isInLoS(eventPlayer.getEyePosition() + Vector.DOWN, player.getEyePosition() + Vector.DOWN, BarrierLos.PASS_THROUGH_BARRIERS) and player.getPosition().y < (eventPlayer.getEyePosition() + Vector.UP).y and player.getEyePosition().y > eventPlayer.getPosition().y and distance(eventPlayer.getPosition() + Vector.UP, player.getPosition() + Vector.UP) < 3 and player != eventPlayer and player.isAlive() and player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false], lambda i: distance(eventPlayer.getPosition() + Vector.UP, i.getPosition() + Vector.UP)))[0]).hit_by_talent)[6] = eventPlayer
         wait()
         #If the player got a target
         if eventPlayer.talent_counter_or_position_etc[6] != null:
-            while eventPlayer.talent_counter_or_position_etc[6] != null and eventPlayer.talent_counter_or_position_etc[6] != eventPlayer and eventPlayer.isAlive() and eventPlayer.juggernaut_charge > 0 and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false and (eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() > 14 * eventPlayer.stats[Stat.SPEED] / 100 or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 >= getTotalTimeElapsed()):
-                (([player for player in getPlayersInRadius(eventPlayer.getPosition() + worldVector(vect(0, 1, 2.5), eventPlayer, Transform.ROTATION), 5, Team.ALL, LosCheck.OFF) if eventPlayer.isInViewAngle(player, 45) and isInLoS(eventPlayer.talent_counter_or_position_etc[6].getEyePosition() + Vector.DOWN, player.getEyePosition() + Vector.DOWN, BarrierLos.PASS_THROUGH_BARRIERS) and player.getPosition().y < (eventPlayer.getEyePosition() + Vector.UP).y and player.getEyePosition().y > eventPlayer.getPosition().y and distance(eventPlayer.getPosition() + Vector.UP, player.getPosition() + Vector.UP) < 4 and player != eventPlayer and player.isAlive() and player != eventPlayer.talent_counter_or_position_etc[6] and player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false and player.hit_by_talent[Talent.CYBERNETICS] == null]).hit_by_talent)[2] = eventPlayer
+            while eventPlayer.talent_counter_or_position_etc[6] != null and eventPlayer.talent_counter_or_position_etc[6] != eventPlayer and eventPlayer.isAlive() and eventPlayer.juggernaut_charge > 0 and eventPlayer.is_using_ability[Talent.IMMUNITY] == false and (eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() > 14 * eventPlayer.stats[Stat.SPEED] / 100 or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 >= getTotalTimeElapsed()):
+                (([player for player in getPlayersInRadius(eventPlayer.getPosition() + worldVector(vect(0, 1, 2.5), eventPlayer, Transform.ROTATION), 5, Team.ALL, LosCheck.OFF) if eventPlayer.isInViewAngle(player, 45) and isInLoS(eventPlayer.talent_counter_or_position_etc[6].getEyePosition() + Vector.DOWN, player.getEyePosition() + Vector.DOWN, BarrierLos.PASS_THROUGH_BARRIERS) and player.getPosition().y < (eventPlayer.getEyePosition() + Vector.UP).y and player.getEyePosition().y > eventPlayer.getPosition().y and distance(eventPlayer.getPosition() + Vector.UP, player.getPosition() + Vector.UP) < 4 and player != eventPlayer and player.isAlive() and player != eventPlayer.talent_counter_or_position_etc[6] and player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false and player.hit_by_talent[Talent.CYBERNETICS] == null]).hit_by_talent)[2] = eventPlayer
                 wait()
-                waitUntil(eventPlayer.talent_counter_or_position_etc[6] == null or eventPlayer.talent_counter_or_position_etc[6] == eventPlayer or eventPlayer.isDead() or eventPlayer.juggernaut_charge <= 0 or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100, 0.048)
-                if eventPlayer.talent_counter_or_position_etc[6] == null or eventPlayer.talent_counter_or_position_etc[6] == eventPlayer or eventPlayer.isDead() or eventPlayer.juggernaut_charge <= 0 or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100:
+                waitUntil(eventPlayer.talent_counter_or_position_etc[6] == null or eventPlayer.talent_counter_or_position_etc[6] == eventPlayer or eventPlayer.isDead() or eventPlayer.juggernaut_charge <= 0 or eventPlayer.is_using_ability[Talent.IMMUNITY] == true or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100, 0.048)
+                if eventPlayer.talent_counter_or_position_etc[6] == null or eventPlayer.talent_counter_or_position_etc[6] == eventPlayer or eventPlayer.isDead() or eventPlayer.juggernaut_charge <= 0 or eventPlayer.is_using_ability[Talent.IMMUNITY] == true or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100:
                     break
-        if eventPlayer.talent_counter_or_position_etc[6] == eventPlayer or eventPlayer.isDead() or eventPlayer.juggernaut_charge <= 0 or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100:
+        if eventPlayer.talent_counter_or_position_etc[6] == eventPlayer or eventPlayer.isDead() or eventPlayer.juggernaut_charge <= 0 or eventPlayer.is_using_ability[Talent.IMMUNITY] == true or eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + 0.25 < getTotalTimeElapsed() and eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100:
             break
-    if eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100 and eventPlayer.isAlive() and eventPlayer.juggernaut_charge > 0 and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false:
-        (([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 4, Team.ALL, LosCheck.SURFACES_AND_ENEMY_BARRIERS) if player != eventPlayer and player.isAlive() and player != eventPlayer.talent_counter_or_position_etc[6] and player.hit_by_talent[Talent.JUGGERNAUT] != eventPlayer and player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false and player.hit_by_talent[Talent.CYBERNETICS] == null]).hit_by_talent)[2] = eventPlayer
-        damage([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 4, Team.ALL, LosCheck.SURFACES_AND_ENEMY_BARRIERS) if player != eventPlayer and player.hit_by_talent[Talent.JUGGERNAUT] != eventPlayer and player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false], eventPlayer, JUGGERNAUT_DAMAGE)
+    if eventPlayer.getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100 and eventPlayer.isAlive() and eventPlayer.juggernaut_charge > 0 and eventPlayer.is_using_ability[Talent.IMMUNITY] == false:
+        (([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 4, Team.ALL, LosCheck.SURFACES_AND_ENEMY_BARRIERS) if player != eventPlayer and player.isAlive() and player != eventPlayer.talent_counter_or_position_etc[6] and player.hit_by_talent[Talent.JUGGERNAUT] != eventPlayer and player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false and player.hit_by_talent[Talent.CYBERNETICS] == null]).hit_by_talent)[2] = eventPlayer
+        damage([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 4, Team.ALL, LosCheck.SURFACES_AND_ENEMY_BARRIERS) if player != eventPlayer and player.hit_by_talent[Talent.JUGGERNAUT] != eventPlayer and player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false], eventPlayer, JUGGERNAUT_DAMAGE)
         playEffect(getAllPlayers(), DynamicEffect.SIGMA_ACCRETION_IMPACT, Color.TEAM_1, eventPlayer.getPosition() + Vector.UP, 1)
         playEffect(getAllPlayers(), DynamicEffect.SIGMA_ACCRETION_IMPACT_SOUND, Color.TEAM_1, eventPlayer.getPosition() + Vector.UP, 100)
         playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_PILEDRIVER_IMPACT, Color.TEAM_1, eventPlayer.getPosition(), 1)
@@ -379,7 +379,7 @@ def juggernaut_knockback():
     
     #When doing the juggernaut start jump
     while eventPlayer.isAlive() and eventPlayer.is_using_ability[Talent.JUGGERNAUT] == true and eventPlayer.talent_counter_or_position_etc[6] == null and eventPlayer.has_hit_the_ground == false:
-        (([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 5, Team.ALL, LosCheck.OFF) if eventPlayer.isInViewAngle(player, 45) and isInLoS(eventPlayer.talent_counter_or_position_etc[6].getEyePosition() + Vector.DOWN, player.getEyePosition() + Vector.DOWN, BarrierLos.PASS_THROUGH_BARRIERS) and player.getPosition().y < (eventPlayer.getEyePosition() + Vector.UP).y and player.getEyePosition().y > eventPlayer.getPosition().y and distance(eventPlayer.getPosition() + Vector.UP, player.getPosition() + Vector.UP) < 4 and player != eventPlayer and player.isAlive() and player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false and player.hit_by_talent[Talent.CYBERNETICS] == null]).hit_by_talent)[2] = eventPlayer
+        (([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 5, Team.ALL, LosCheck.OFF) if eventPlayer.isInViewAngle(player, 45) and isInLoS(eventPlayer.talent_counter_or_position_etc[6].getEyePosition() + Vector.DOWN, player.getEyePosition() + Vector.DOWN, BarrierLos.PASS_THROUGH_BARRIERS) and player.getPosition().y < (eventPlayer.getEyePosition() + Vector.UP).y and player.getEyePosition().y > eventPlayer.getPosition().y and distance(eventPlayer.getPosition() + Vector.UP, player.getPosition() + Vector.UP) < 4 and player != eventPlayer and player.isAlive() and player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.DIVE_BOMB] == false and player.hit_by_talent[Talent.CYBERNETICS] == null]).hit_by_talent)[2] = eventPlayer
         wait()
         waitUntil(eventPlayer.isDead() or eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false or eventPlayer.talent_counter_or_position_etc[6] != null or eventPlayer.has_hit_the_ground == true, 0.048)
 */
@@ -419,7 +419,7 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Hit By Juggernaut":
     eventPlayer.attachTo(eventPlayer.hit_by_talent[Talent.JUGGERNAUT], vect(0, 0, 1))
     eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.hit_by_talent[Talent.JUGGERNAUT].getEyePosition()), 1500, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
     eventPlayer.setStatusEffect(null, Status.STUNNED, 10)
-    waitUntil(eventPlayer.isDead() or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].isDead() or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].juggernaut_charge == 0 or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].is_using_ability[Talent.PURITY_FIELD] == true or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100, 10)
+    waitUntil(eventPlayer.isDead() or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].isDead() or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].juggernaut_charge == 0 or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].is_using_ability[Talent.IMMUNITY] == true or eventPlayer.hit_by_talent[Talent.JUGGERNAUT].getSpeed() <= 14 * eventPlayer.stats[Stat.SPEED] / 100, 10)
     eventPlayer.stopFacing()
     eventPlayer.teleport(eventPlayer.hit_by_talent[Talent.JUGGERNAUT])
     eventPlayer.clearStatusEffect(Status.STUNNED)
@@ -489,7 +489,7 @@ rule "TALENT SYSTEM - - - [DIVE BOMB] Use Dive Bomb":
     @Event eachPlayer
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.talent_ranks[Talent.DIVE_BOMB] > 0
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.SHADOWSTEP] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
@@ -569,7 +569,7 @@ rule "TALENT SYSTEM - - - [DIVE BOMB] Use Dive Bomb":
         (([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 5, Team.ALL, LosCheck.SURFACES) if player.is_using_ability[1] == false and player.is_using_ability[17] == false and player != eventPlayer and player.browsing_shop == false and player.isAlive()]).hit_by_talent)[7] = eventPlayer
         */
 
-        eventPlayer.victims_in_dive_bomb_radius = [player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 5, Team.ALL, LosCheck.SURFACES) if player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player != eventPlayer and player.browsing_shop == false and player.isAlive()]
+        eventPlayer.victims_in_dive_bomb_radius = [player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, 5, Team.ALL, LosCheck.SURFACES) if player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player != eventPlayer and player.browsing_shop == false and player.isAlive()]
         eventPlayer.dive_bomb_damage_total = 0
         for eventPlayer.current_dive_bomb_target in range(len(eventPlayer.victims_in_dive_bomb_radius)):
             eventPlayer.victims_in_dive_bomb_radius[eventPlayer.current_dive_bomb_target].applyImpulse(angleToDirection(horizontalAngleOfDirection(directionTowards(eventPlayer.getPosition(), eventPlayer.victims_in_dive_bomb_radius[eventPlayer.current_dive_bomb_target].getEyePosition() + Vector.DOWN)), min(verticalAngleOfDirection(directionTowards(eventPlayer.getPosition(), eventPlayer.victims_in_dive_bomb_radius[eventPlayer.current_dive_bomb_target].getEyePosition() + Vector.DOWN)), -22.5)), 40 * (eventPlayer.victims_in_dive_bomb_radius[eventPlayer.current_dive_bomb_target].stats[Stat.KNOCKBACK_RECEIVED] / 100), Relativity.TO_WORLD, Impulse.CANCEL_CONTRARY_MOTION_XYZ)
@@ -601,7 +601,7 @@ rule "TALENT SYSTEM - - - [TALENT 8: CRYOGENICS] Hit By Cryogenics":
     if eventPlayer.is_using_ability[Talent.SHADOWSTEP] == true:
         eventPlayer.hit_by_talent[Talent.CRYOGENICS] = null
         return
-    if eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true:
+    if eventPlayer.is_using_ability[Talent.IMMUNITY] == true:
         eventPlayer.hit_by_talent[Talent.CRYOGENICS] = null
         return
     if eventPlayer.is_using_ability[Talent.JUGGERNAUT] == true:
@@ -657,7 +657,7 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Charge Railgun":
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition eventPlayer.hasStatusEffect(Status.STUNNED) == false
     @Condition eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) == false
@@ -717,7 +717,7 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Use Railgun":
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     #@Condition eventPlayer.isCommunicatingEmote() == false
     @Condition "{0}".format(eventPlayer.isCommunicatingEmote()) == "0"
@@ -835,12 +835,12 @@ rule "TALENT SYSTEM - - - [TALENT 14/31: HEALTH POTIONS/POISON VIAL] Use Health 
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
     
-    #So the code can detect if the player is casting purity field at the same time
+    #So the code can detect if the player is casting immunity at the same time
     wait()
     if eventPlayer.getHealthOfType(Health.NORMAL) == eventPlayer.getMaxHealthOfType(Health.NORMAL) and eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0:
         async(already_at_full_health, AsyncBehavior.NOOP)
         return
-    if (eventPlayer.isUsingAbility1() or eventPlayer.is_using_ability[Talent.PURITY_FIELD] == true) and eventPlayer.talent_ranks[Talent.POISON_VIALS] > 0:
+    if (eventPlayer.isUsingAbility1() or eventPlayer.is_using_ability[Talent.IMMUNITY] == true) and eventPlayer.talent_ranks[Talent.POISON_VIALS] > 0:
         return
     eventPlayer.is_using_ability[Talent.HEALTH_POTIONS] = true
     if eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0:
@@ -1101,7 +1101,7 @@ rule "TALENT SYSTEM - - - [TALENT 19: BURNING SOUL] Burning Soul Damage Aura":
         if 
             player != eventPlayer 
             and player.is_using_ability[Talent.SHADOWSTEP] == false 
-            and player.is_using_ability[Talent.PURITY_FIELD] == false 
+            and player.is_using_ability[Talent.IMMUNITY] == false 
             and eventPlayer.is_using_ability[Talent.STEALTH] == false
             and player.is_using_ability[Talent.STEALTH] == false 
             and player.browsing_shop == false  
@@ -1111,7 +1111,7 @@ rule "TALENT SYSTEM - - - [TALENT 19: BURNING SOUL] Burning Soul Damage Aura":
         if 
             player != eventPlayer 
             and player.is_using_ability[Talent.SHADOWSTEP] == false 
-            and player.is_using_ability[Talent.PURITY_FIELD] == false
+            and player.is_using_ability[Talent.IMMUNITY] == false
             and eventPlayer.is_using_ability[Talent.STEALTH] == false 
             and player.is_using_ability[Talent.STEALTH] == false 
             and player.browsing_shop == false 
@@ -1140,7 +1140,7 @@ rule "TALENT SYSTEM - - - [TALENT 20: BERSERKER] Use Berserker":
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     #Dive Bomb
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     #@Condition eventPlayer.isCommunicatingEmote() == false
     @Condition "{0}".format(eventPlayer.isCommunicatingEmote()) == "0"
@@ -1207,7 +1207,7 @@ rule "TALENT SYSTEM - - - [TALENT 21: FIREBALL] Use Fireball":
     @Condition eventPlayer.hasStatusEffect(Status.STUNNED) == false
     @Condition eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition (not eventPlayer.hasStatusEffect(Status.PHASED_OUT) if eventPlayer.is_using_ability[Talent.SHADOWSTEP] == false else eventPlayer.isAlive()) == true
@@ -1245,7 +1245,7 @@ def fireball_casted():
             player.browsing_shop == false 
             and player.isAlive() 
             #and player != eventPlayer 
-            and player.is_using_ability[Talent.PURITY_FIELD] == false 
+            and player.is_using_ability[Talent.IMMUNITY] == false 
             and player.is_using_ability[Talent.SHADOWSTEP] == false]
 
     for eventPlayer.fireball_loop in range(len(eventPlayer.victims_in_fireball_radius)):
@@ -1272,15 +1272,15 @@ def fireball_casted():
     eventPlayer.fireball_position = null
 /*
     #Impulse
-    (([player for player in getPlayersInRadius(eventPlayer.fireball_position, FIREBALL_EXPLOSION_RADIUS, Team.ALL, LosCheck.SURFACES) if player.isAlive() and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.PURITY_FIELD] == false]).hit_by_talent)[Talent.FIREBALL] = eventPlayer
+    (([player for player in getPlayersInRadius(eventPlayer.fireball_position, FIREBALL_EXPLOSION_RADIUS, Team.ALL, LosCheck.SURFACES) if player.isAlive() and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.is_using_ability[Talent.IMMUNITY] == false]).hit_by_talent)[Talent.FIREBALL] = eventPlayer
 
     #Set Status Burning
-    ([player for player in getPlayersInRadius(eventPlayer.fireball_position, FIREBALL_EXPLOSION_RADIUS, Team.ALL, LosCheck.SURFACES) if player.is_using_ability[Talent.PURITY_FIELD] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.isAlive()]).setStatusEffect(eventPlayer, Status.BURNING, 5)
+    ([player for player in getPlayersInRadius(eventPlayer.fireball_position, FIREBALL_EXPLOSION_RADIUS, Team.ALL, LosCheck.SURFACES) if player.is_using_ability[Talent.IMMUNITY] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and player.browsing_shop == false and player.isAlive()]).setStatusEffect(eventPlayer, Status.BURNING, 5)
     
     #If the caster is within radius
     if ([player for player in getPlayersInRadius(eventPlayer.fireball_position, FIREBALL_EXPLOSION_RADIUS, Team.ALL, LosCheck.OFF) if player == eventPlayer and player.isAlive()]) == true:
         #deal friendly fire (33,333%)
-        if eventPlayer.talent_ranks[Talent.PYROMANIAC] == 0 and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false:
+        if eventPlayer.talent_ranks[Talent.PYROMANIAC] == 0 and eventPlayer.is_using_ability[Talent.IMMUNITY] == false:
             damage(eventPlayer, eventPlayer, FIREBALL_DAMAGE_SELF)
             eventPlayer.startDoT(eventPlayer, FIREBALL_DAMAGE_SELF_OVER_TIME_DURATION, FIREBALL_DAMAGE_SELF_OVER_TIME)
         else:
@@ -1315,14 +1315,14 @@ rule "TALENT SYSTEM - - - [TALENT 22: IGNORE PAIN] Ignore Pain Activated":
     @Condition eventPlayer.talent_ranks[Talent.IGNORE_PAIN] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition (eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.is_using_ability[Talent.JUGGERNAUT] == true or eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) or eventPlayer.isReloading() or eventPlayer.isUsingAbility1() or eventPlayer.is_using_hearthstone == true or eventPlayer.is_using_ability[Talent.GRIM_REAPER] == true) == true
     
     eventPlayer.is_using_ability[Talent.IGNORE_PAIN] = true
     async(ignore_pain_volume, AsyncBehavior.NOOP)
     eventPlayer.ignore_pain_damage_resistance = IGNORE_PAIN_DAMAGE_RESISTANCE
     recalculate_damage_received()
-    waitUntil(not eventPlayer.hasStatusEffect(Status.STUNNED) and not eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) and not eventPlayer.isReloading() and not eventPlayer.isUsingAbility1() and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false and eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false and eventPlayer.is_using_hearthstone == false and eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false or eventPlayer.isDead(), 99999)
+    waitUntil(not eventPlayer.hasStatusEffect(Status.STUNNED) and not eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) and not eventPlayer.isReloading() and not eventPlayer.isUsingAbility1() and eventPlayer.is_using_ability[Talent.IMMUNITY] == false and eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false and eventPlayer.is_using_hearthstone == false and eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false or eventPlayer.isDead(), 99999)
     eventPlayer.ignore_pain_volume = 25
     eventPlayer.is_using_ability[Talent.IGNORE_PAIN] = false
     recalculate_damage_received()
@@ -1635,7 +1635,7 @@ def grim_reaper_casted():
         goto lbl_0
 
     # WHO WILL GET HIT?
-    eventPlayer.victims_in_grim_reaper_radius = [player for player in getPlayersInRadius(eventPlayer.grim_reaper_camera_destination + Vector.DOWN, GRIM_REAPER_RADIUS, Team.ALL, LosCheck.OFF) if player != eventPlayer and player.is_using_ability[Talent.SHADOWSTEP] == false and player.is_using_ability[Talent.PURITY_FIELD] == false and player.browsing_shop == false and player.isAlive() == true]
+    eventPlayer.victims_in_grim_reaper_radius = [player for player in getPlayersInRadius(eventPlayer.grim_reaper_camera_destination + Vector.DOWN, GRIM_REAPER_RADIUS, Team.ALL, LosCheck.OFF) if player != eventPlayer and player.is_using_ability[Talent.SHADOWSTEP] == false and player.is_using_ability[Talent.IMMUNITY] == false and player.browsing_shop == false and player.isAlive() == true]
     
     # EFFECTS - PLAYED ONCE
     playEffect(getAllPlayers() if not eventPlayer.is_using_ability[Talent.STEALTH] else null, DynamicEffect.SOMBRA_TRANSLOCATOR_REAPPEAR, Color.TEAM_2, eventPlayer.grim_reaper_camera_destination + Vector.DOWN, 1)
@@ -1760,7 +1760,7 @@ rule "TALENT SYSTEM - - - [BOMBARDMENT]":
     if eventPlayer.talent_ranks[Talent.BOMBARDMENT] == 0:
         eventPlayer.setSecondaryFireEnabled(false)
         eventPlayer.rockets_cooldown = 6
-        waitUntil(eventPlayer.rockets_cooldown == 0 and eventPlayer.browsing_shop == false and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false and eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false, 99999)
+        waitUntil(eventPlayer.rockets_cooldown == 0 and eventPlayer.browsing_shop == false and eventPlayer.is_using_ability[Talent.IMMUNITY] == false and eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false, 99999)
         if eventPlayer.talent_ranks[Talent.RAILGUN] > 0:
             return
         eventPlayer.setSecondaryFireEnabled(true)
@@ -1779,7 +1779,7 @@ rule "TALENT SYSTEM - - - [GUNSLINGER]":
     @Condition eventPlayer.getAmmo(0) > 0
     @Condition eventPlayer.isReloading() == false
     @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == true
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     
     eventPlayer.allowButton(Button.PRIMARY_FIRE)
@@ -1801,7 +1801,7 @@ rule "TALENT SYSTEM - - - [SPRINTER]":
     @Condition not eventPlayer.isDummy()
     @Condition eventPlayer.talent_ranks[Talent.SPRINTER] > 0
     @Condition eventPlayer.isUsingAbility1() == true
-    @Condition eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false
+    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.browsing_shop == false
     
@@ -1841,7 +1841,7 @@ rule "TALENT SYSTEM - - - [ADRENALINE RUSH] Apply Speed":
         if not eventPlayer.is_using_ability[Talent.CRYOGENICS]:
             eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED] * eventPlayer.adrenaline_rush_value / 100)
         wait(1)
-    if eventPlayer.is_using_ability[Talent.BANDAGE] == false and eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false and eventPlayer.is_using_hearthstone == false and eventPlayer.is_using_ability[Talent.PURITY_FIELD] == false and eventPlayer.is_charging_railgun == false and eventPlayer.is_using_ability[Talent.CRYOGENICS] == false:
+    if eventPlayer.is_using_ability[Talent.BANDAGE] == false and eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false and eventPlayer.is_using_hearthstone == false and eventPlayer.is_using_ability[Talent.IMMUNITY] == false and eventPlayer.is_charging_railgun == false and eventPlayer.is_using_ability[Talent.CRYOGENICS] == false:
         eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
 */ 
 /*

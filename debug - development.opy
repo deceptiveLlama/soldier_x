@@ -32,7 +32,7 @@ rule "DEBUG - - - Element & Load Readout":
     hudText(hostPlayer, null, \
         "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), \
         "Srv Load: {0} | Avg: {1} | Peak: {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), \
-        HudPosition.ACTUALLY_LEFT, 0, \
+        HudPosition.RIGHT, 1, \
         Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN, \
         Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
 
@@ -234,7 +234,7 @@ rule "DEBUG - - - Shop Placement Readout":
             round(hostPlayer.getEyePosition().y * 1000) / 1000, \
             round(hostPlayer.getEyePosition().z * 1000) / 1000, \
             round(horizontalAngleOfDirection(hostPlayer.getFacingDirection()))), \
-        null, HudPosition.ACTUALLY_LEFT, 1, Color.ORANGE, Color.ORANGE, Color.ORANGE, \
+        null, HudPosition.RIGHT, 2, Color.ORANGE, Color.ORANGE, Color.ORANGE, \
         HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
 
 /*

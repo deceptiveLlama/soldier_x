@@ -2,7 +2,7 @@
 
 enum Talent:
     BLOODTHIRST, #1
-    PURITY_FIELD, #2
+    IMMUNITY, #2
     CYBERNETICS, #3
     SOUL_HARVEST, #4
     POISONOUS_DAGGER, #5
@@ -78,6 +78,7 @@ macro SHOP_TALENT_SPREAD = 31           #degrees each side talent (index 0 = lef
 macro SHOP_TALENT_RADIUS = 5.4          #meters from the camera (shop_location) out to each talent
 macro SHOP_TALENT_ELEVATION = 0      #degrees ALL three talents sit above the camera's eye line
 macro SHOP_TALENT_MIDDLE_ELEVATION = 4  #EXTRA degrees the middle talent (index 1) sits above the side talents
+macro INVISIBLE_CHAR = "­"           #U+00AD soft hyphen: renders as nothing but counts as a character (anchors trailing blank padding lines so they aren't trimmed; pads empty talent slots)
 globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 536, 589, 648, 713, 785, 863, 949, 1044, 1149, 1264, 1390, 1529, 1682, 1850, 2035, 2239, 2462, 2709]
 playervar talent_trigger_times
 playervar railgun_charge
@@ -160,16 +161,15 @@ playervar juggernaut_charge
 playervar talents_offered_in_shop
 playervar player_name = "{0}".format(eventPlayer)
 playervar player_temp_effects
-playervar possible_talents = [Talent.PURITY_FIELD, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
+playervar possible_talents = [Talent.IMMUNITY, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
 #playervar poison_vials_projPos
 #playervar poison_vials_projPosIn0032
 /*playervar replace_replacing_or_cancelled = [false, false, false]*/
 playervar skipped_a_talent
 playervar talent_counter_or_position_etc
 playervar talent_ranks = []
-playervar talents_you_do_not_have = [Talent.PURITY_FIELD, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
+playervar talents_you_do_not_have = [Talent.IMMUNITY, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
 playervar using_one_of_the_hearthstones
-playervar which_is_talent_unique_unlocked = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
 playervar xp_boost_is_active
 #playervar xp_orb_destination
 playervar dive_bomb_damage
@@ -179,7 +179,7 @@ playervar using_cryogenics = false
 playervar hit_by_talent
 playervar player_xp_orb_index
 #playervar cybernetics_shields = 0
-playervar purity_field_position = null
+playervar immunity_position = null
 playervar victims_in_burning_soul_radius
 #playervar remaining_poisonous_dagger_duration = 0
 playervar poisonous_dagger_attackers = []       # list of attackers who've poisoned this victim
@@ -187,9 +187,9 @@ playervar poisonous_dagger_timestamp = []    # parallel array: getTotalTimeElaps
 playervar grim_reaper_camera_position = null
 playervar casting_timer = 0
 playervar grim_reaper_ramp_up = 0
-playervar purity_field_duration = 0
+playervar immunity_duration = 0
 playervar adrenaline_rush_value = 100
-playervar current_purity_field_target = 0
+playervar current_immunity_target = 0
 playervar current_dive_bomb_target = 0
 
 #--- Multi-file defineMember (variable[0-42]) ---
@@ -227,7 +227,7 @@ playervar current_dive_bomb_target = 0
 #!defineMember stealth_stun_text_id variable[32]
 #!defineMember current_stealth_target variable[33]
 #!defineMember railgun_charge_effect_id variable[34]
-#!defineMember victims_in_purity_field_radius variable[35]
+#!defineMember victims_in_immunity_radius variable[35]
 #!defineMember victims_in_dive_bomb_radius variable[36]
 #!defineMember dive_bomb_damage_total variable[37]
 #!defineMember bot_throttle_paused variable[38]
@@ -238,10 +238,7 @@ playervar current_dive_bomb_target = 0
 #!defineMember recent_damage_victims variable[408]
 #!defineMember recent_damage_other variable[409]
 #!defineMember recent_damage_time_other variable[410]
-#!defineMember recent_damage_gun variable[411]
 #!defineMember recent_damage_crit_other variable[412]
-#!defineMember recent_damage_crit_gun variable[413]
-#!defineMember recent_damage_time_gun variable[414]
 
 #--- Shared global defineMember (global_variable[0-49]) ---
 
@@ -287,93 +284,32 @@ subroutine block_player_input
 #!define generateTalents() __script__("talents.js")
 generateTalents()
 
-macro ALCHEMIST_PROC_CHANCE = random.randint(33 + ((player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] - 1) * 8.25), 100)
-macro BLOODTHIRST_DAMAGE_TO_HEALING_AMOUNT = eventDamage * (0.19 + eventPlayer.talent_ranks[Talent.BLOODTHIRST] * 0.062)
-macro BERSERKER_DURATION = 3.75 + eventPlayer.talent_ranks[Talent.BERSERKER] * 1.25
-macro BURNING_SOUL_DAMAGE = 2.25 + eventPlayer.talent_ranks[Talent.BURNING_SOUL] * 0.75
-macro BURNING_SOUL_ORB_DAMAGE = 75 + xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE_RANK] * 25
-macro BURNING_SOUL_AURA_RADIUS = 8
-macro BURNING_SOUL_ORB_DURATION = 4
-macro GRIM_REAPER_RADIUS = 4
-macro CRYOGENICS_SLOW_DURATION = 2 + eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 0.2
-macro CRYOGENICS_SLOW_AMOUNT = eventPlayer.stats[Stat.SPEED] * (0.5 - eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 0.1)
-macro CYBERNETICS_SHIELD_AMOUNT = 56.25 + eventPlayer.talent_ranks[Talent.CYBERNETICS] * 18.75
+#--- Per-talent tuning macros (damage/healing/durations/radii/etc.) are GENERATED from talents.js. ---
+#--- Edit a talent's stats/tuning block there; see generateTalents() above. The macros below were NOT moved: ---
+
+#Unused cooldown macros (kept; talents.js cooldown/cd_reduction fields are the live source)
 macro SHADOWSTEP_BASE_COOLDOWN = 22.5
-macro SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK = 2.5
 macro STEALTH_BASE_COOLDOWN = 20
 macro STEALTH_COOLDOWN_REDUCTION_PER_RANK = 4
 macro GRIM_REAPER_COOLDOWN_REDUCTION_PER_RANK = 6
 macro HEALTH_POTIONS_COOLDOWN_REDUCTION_PER_RANK = 1
-#Health Potions: Rank 1: 200 total healing (3 potions), Rank 5: 400 total healing
-macro HEALTH_POTIONS_HEALING_OVER_TIME = (150 + eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] * 50) / 6
-# Hidden +0.2084 on rank 1 (5 -> 5.2084/s) clears the ~5.2083 (125/24) heal-rate threshold below which OW's per-HP heal sound stutters — prevents that bug.
-macro HEALTH_REGEN_HEALING_OVER_TIME = 3.75 + eventPlayer.talent_ranks[Talent.HEALTH_REGEN] * 1.25 + (2084 / 10000 if eventPlayer.talent_ranks[Talent.HEALTH_REGEN] == 1 else 0)
-#FIREBALL_DAMAGE: Rank 1: 40 damage, Rank 5: 80 damage
-#FIREBALL_DAMAGE_OVER_TIME: Rank 1: 40 damage, Rank 5: 80 damage
-macro FIREBALL_DAMAGE = 30 + eventPlayer.talent_ranks[Talent.FIREBALL] * 10
-macro FIREBALL_DAMAGE_SELF = 12.5 + eventPlayer.talent_ranks[Talent.FIREBALL] * 4.166
-macro FIREBALL_DAMAGE_SELF_OVER_TIME_DURATION = 5
-macro FIREBALL_DAMAGE_SELF_OVER_TIME = 2.5 + eventPlayer.talent_ranks[Talent.FIREBALL] * 0.833
-macro FIREBALL_DAMAGE_OVER_TIME = 6 + eventPlayer.talent_ranks[Talent.FIREBALL] * 2
-macro FIREBALL_DAMAGE_OVER_TIME_DURATION = 5
-macro FIREBALL_SPEED = 15
 macro FIREBALL_PROJECTILE_RADIUS = 1.75
-macro FIREBALL_EXPLOSION_RADIUS = 4
-macro PYROMANIAC_INSTANT_HEALING = min(30 + eventPlayer.talent_ranks[Talent.PYROMANIAC] * 10, eventPlayer.getMaxHealthOfType(Health.NORMAL) - eventPlayer.getHealthOfType(Health.NORMAL))
-macro PYROMANIAC_HEALING_OVER_TIME = 6 + eventPlayer.talent_ranks[Talent.PYROMANIAC] * 2
-macro PYROMANIAC_HEALING_DURATION = 5
-#Railgun: Rank 1: 100(150 headshot) damage, Rank 5: 200(300 headshot) damage
-macro RAILGUN_ADDITIONAL_DAMAGE = 112.5 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 37.5 if eventWasCriticalHit else 75 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 25
-#Gunslinger: Rank 1: 66(132 headshot) damage, Rank 5: 79(158 headshot) damage - - - 19(38 headshot) damage added as well from the primary fire
+
+#Disabled/removed-talent tuning (kept commented for revival)
 #macro GUNSLINGER_ADDITIONAL_DAMAGE = round(eventDamage * 3.333 + eventDamage * attacker.talent_ranks[Talent.GUNSLINGER] * 0.166)
-#IGNITE_DAMAGE_PER_SECOND: Rank 1: 40 total damage, Rank 5: 80 total damage
-#IGNITE_BOMBARDMENT_DAMAGE_PER_SECOND: Rank 1 25 damage, Rank 5: 50 damage
-#IGNITE_RAILGUN_DAMAGE_PER_SECOND: Rank 1 50 damage, Rank 5: 100 damage
-macro IGNITE_DAMAGE_PER_SECOND = round(9.97 + attacker.talent_ranks[Talent.IGNITE] * 0.028 * eventDamage)
 #macro IGNITE_BOMBARDMENT_DAMAGE_PER_SECOND = round(9.97 + attacker.talent_ranks[Talent.IGNITE] * 0.028 * eventDamage / 2)
-macro IGNITE_RAILGUN_DAMAGE_PER_SECOND = round(12.45 + attacker.talent_ranks[Talent.IGNITE] * 0.028 * 150)
-#Bombardment: Rank 1: 4 total damage, Rank 5: 20 total damage
 #macro BOMBARDMENT_DAMAGE = attacker.talent_ranks[Talent.BOMBARDMENT] * 4
-#Poisonous Dagger: max is there to account for if a player leave and code breaks. To lazy to fix another way atm.
-macro POISONOUS_DAGGER_DAMAGE = max(75 + eventPlayer.poisonous_dagger_attackers[0].talent_ranks[Talent.POISONOUS_DAGGER] * 25, 100)
-macro POISONOUS_DAGGER_DURATION = 5
-#Soul Harvest: Rank 1: 125 total healing, Rank 5: 250 total healing
-macro SOUL_HARVEST_HEALING = round(93.75 + player_picking_up_orb.talent_ranks[Talent.SOUL_HARVEST] * 31.25)
-#Bandage: Rank 1: 200 total healing, Rank 5: 400 total healing
-macro BANDAGE_HEAL_OVER_TIME = (15 + eventPlayer.talent_ranks[Talent.BANDAGE] * 5)
-macro BANDAGE_HEAL_OVER_TIME_DURATION = 10
-macro IGNORE_PAIN_DAMAGE_RESISTANCE = eventPlayer.talent_ranks[Talent.IGNORE_PAIN] * 6.666 + 33.333
-macro IGNORE_PAIN_DAMAGE_RECEIVED = 66.666 - eventPlayer.talent_ranks[Talent.IGNORE_PAIN] * 6.666
-macro JUGGERNAUT_DAMAGE = 125 + eventPlayer.talent_ranks[Talent.JUGGERNAUT] * 25
-macro JUGGERNAUT_VS_JUGGERNAUT_SELF_DAMAGE = 125 + eventPlayer.hit_by_talent[Talent.JUGGERNAUT].talent_ranks[Talent.JUGGERNAUT] * 25
-#macro GRIM_REAPER_WALLHACK_THRESHOLD = (0.150 + (player.talent_ranks[Talent.GRIM_REAPER] * 0.050))
-macro GRIM_REAPER_THRESHOLD_NORMALIZED_ATTACKER = (0.150 + (attacker.talent_ranks[Talent.GRIM_REAPER] * 0.050))
-macro GRIM_REAPER_THRESHOLD_NORMALIZED_VICTIM = (0.150 + (victim.talent_ranks[Talent.GRIM_REAPER] * 0.050))
 #macro POISON_VIALS_DAMAGE = 28.125 + eventPlayer.talent_ranks[Talent.POISON_VIALS] * 9.375
 #macro POISON_VIALS_DAMAGE_OVER_TIME_DURATION = 5
 #macro POISON_VIALS_DAMAGE_OVER_TIME = floor(5.6 + eventPlayer.talent_ranks[Talent.POISON_VIALS] * 1.9)
 #macro SPRINTER_MOVE_SPEED_MULTIPLIER = eventPlayer.stats[Stat.SPEED] * (1 + eventPlayer.talent_ranks[Talent.SPRINTER] * 0.066)
-#Dive Bomb: Rank 1: 75 total damage, Rank 5: 150 total damage (The damage is doubled if you have been in air for 1 second)
-macro DIVE_BOMB_DAMAGE = (56.25 + eventPlayer.talent_ranks[Talent.DIVE_BOMB] * 18.75)
-#For HUD
-macro DIVE_BOMB_DAMAGE_LOCAL = (56.25 + localPlayer.talent_ranks[Talent.DIVE_BOMB] * 18.75)
-#Lifesteal: Rank 1: 15% healing, Rank 5: 30% healing
-macro LIFESTEAL_HEAL = eventDamage * (11.25 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 3.75) / 100
+#macro GRIM_REAPER_WALLHACK_THRESHOLD = (0.150 + (player.talent_ranks[Talent.GRIM_REAPER] * 0.050))
 #macro LIFESTEAL_BOMBARDMENT_HEAL = eventDamage * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047) / 2
-macro LIFESTEAL_RAILGUN_HEAL = eventPlayer.railgun_damage_dealt * (11.25 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 3.75) / 100
 #macro LIFESTEAL_GUNSLINGER_HEAL = (GUNSLINGER_ADDITIONAL_DAMAGE + eventDamage) * (0.14 + eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] * 0.047)
+#macro ADRENALINE_RUSH_MAX_SPEED = 125 + (eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] - 1) * 6.25
+#macro ADRENALINE_RUSH_DECAY_RATE = 2.5
 
-macro PURITY_FIELD_HEALING_RECEIVED = 125 + eventPlayer.talent_ranks[Talent.PURITY_FIELD] * 25
-macro PURITY_FIELD_DURATION = 3.75 + eventPlayer.talent_ranks[Talent.PURITY_FIELD] * 1.25
-macro PURITY_FIELD_MOVE_SPEED = 100
-macro GIGACHAD_SCALED_SIZE = 1 + eventPlayer.talent_ranks[Talent.GIGACHAD] * 0.07
-macro GIGACHAD_MOVE_SPEED = 100 - eventPlayer.talent_ranks[Talent.GIGACHAD] * 5
-macro PURITY_EFFECTS_VISIBLE = eventPlayer.browsing_shop == false and not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success) and not eventPlayer.is_using_ability[Talent.STEALTH]
-macro STEALTH_STUN_DURATION = 0.8 + eventPlayer.talent_ranks[Talent.STEALTH] * 0.2
-macro GRIM_REAPER_CAST_TIME = 2.25 - eventPlayer.talent_ranks[Talent.GRIM_REAPER] * 0.25
-macro GRIM_REAPER_CAST_TIME_LOCAL = 2.25 - localPlayer.talent_ranks[Talent.GRIM_REAPER] * 0.25
-macro GRIM_REAPER_FLIGHT_SPEED = 12 + eventPlayer.talent_ranks[Talent.GRIM_REAPER] * 3.6
-macro GRIM_REAPER_HEALTH_THRESHOLD = 0.25
+macro IMMUNITY_EFFECTS_VISIBLE = eventPlayer.browsing_shop == false and not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success) and not eventPlayer.is_using_ability[Talent.STEALTH]
 macro DAMAGE_NUMBER_WINDOW = 1.5
 macro DAMAGE_NUMBER_Y_NEAR = 2
 macro DAMAGE_NUMBER_Y_FAR = 3
