@@ -1,53 +1,8 @@
 #!mainFile "soldier_x.opy"
 
-#--- Debug global defineMember (global_variable[100-105]) ---
-#!defineMember debug_srv_load_sum global_variable[100]
-#!defineMember debug_srv_load_timer global_variable[101]
-#!defineMember debug_srv_load_sample_count global_variable[102]
-#!defineMember debug_srv_load_avg global_variable[103]
-#!defineMember debug_srv_load_avg_init global_variable[104]
-#!defineMember debug_srv_load_avg_10s global_variable[105]
-
 #--- Workshop Settings (only active when this file is included) ---
 rule "DEBUG - - - Init Release Settings":
     faster_testing = createWorkshopSettingBool("02. Testing", "Faster Testing", false, 1)
-
-#rule "DEBUG (For Spectator Only)":
-
-    #hudText(hostPlayer, "Srv Load: {0} {1} {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), "Real Avg: Init: {0} | First Min: {1} | Last 10s: {2}".format(debug_srv_load_avg_init, debug_srv_load_avg, debug_srv_load_avg_10s), "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), HudPosition.ACTUALLY_LEFT, 0, Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN if getAverageServerLoad() < 100 else null, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
-
-
-rule "DEBUG - - - Real Server Load Average":
-    #--- Phase 1: Init (sample until all bots have respawned) ---
-    while getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players \
-        or len([p for p in getAllPlayers() if p.isDummy() and not p.reaper_has_respawned_once]) > 0:
-        debug_srv_load_sample_count += 1
-        debug_srv_load_sum += getServerLoad()
-        debug_srv_load_avg_init = round(debug_srv_load_sum / debug_srv_load_sample_count)
-        wait()
-
-    #--- Reset for phase 2 ---
-    debug_srv_load_sum = 0
-    debug_srv_load_sample_count = 0
-
-    #--- Phase 2: Running (sample for 60 seconds) ---
-    debug_srv_load_timer = getTotalTimeElapsed()
-    while getTotalTimeElapsed() - debug_srv_load_timer < 60:
-        debug_srv_load_sample_count += 1
-        debug_srv_load_sum += getServerLoad()
-        debug_srv_load_avg = round(debug_srv_load_sum / debug_srv_load_sample_count)
-        wait()
-    #--- Phase 3: Continuous rolling 10-second average ---
-    while true:
-        debug_srv_load_sum = 0
-        debug_srv_load_sample_count = 0
-        debug_srv_load_timer = getTotalTimeElapsed()
-        while getTotalTimeElapsed() - debug_srv_load_timer < 10:
-            debug_srv_load_sample_count += 1
-            debug_srv_load_sum += getServerLoad()
-            debug_srv_load_avg_10s = round(debug_srv_load_sum / debug_srv_load_sample_count)
-            wait()
-    debug_srv_load_timer = 0
 
 globalvar debug_bandage = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Bandage", 0, 0, 5, 0)
 globalvar debug_berserker = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Berserker", 0, 0, 5, 0)
@@ -96,7 +51,7 @@ rule "DEBUG - - - Hold Reload For XP [DEFAULT: OFF]":
 
 rule "DEBUG - - - Activate Admin Rights [DEFAULT: OFF]":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     #@Condition hostPlayer == eventPlayer
 
     buy_debug_talents()

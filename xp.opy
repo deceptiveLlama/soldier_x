@@ -29,18 +29,14 @@ rule "XP SYSTEM - - - XP Orbs":
 
             #debug_loop_count += 1
 
-            #any players within current xp orb?
             if [player for player in getRealPlayersInRadius(xp_orbs[xp_orbs_current_index][Orb.POSITION], 2, Team.ALL, LosCheck.SURFACES) if player.isDummy() == false and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] > 0:
 
-                #if there is, who is closest?
                 player_picking_up_orb = [player for player in getRealClosestPlayer(xp_orbs[xp_orbs_current_index][Orb.POSITION], Team.ALL) if player.isDummy() == false and player.browsing_shop == false and player != xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER]] 
                 
-                #destroy created effect and play pick up effects
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.ORB_EFFECT_ID])
                 playEffect(getAllPlayers(), DynamicEffect.BUFF_IMPACT_SOUND, Color.WHITE, player_picking_up_orb, 75)
                 playEffect(getAllPlayers(), DynamicEffect.GOOD_PICKUP_EFFECT, xp_orbs[xp_orbs_current_index][Orb.COLOR], xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
 
-                #award xp
                 if player_picking_up_orb.experience_current < player_picking_up_orb.experience_max:
 
                     player_picking_up_orb.xp_received_message = xp_orbs[xp_orbs_current_index][Orb.XP_AMOUNT]
@@ -52,16 +48,13 @@ rule "XP SYSTEM - - - XP Orbs":
 
                     smallMessage(player_picking_up_orb, "{0} XP Full!".format(iconString(Icon.WARNING)))
 
-                #if the picked up orb is explosive:
                 if xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] >= getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
 
-                    #apply impulse
                     player_picking_up_orb.applyImpulse(angleToDirection(horizontalAngleOfDirection(directionTowards(xp_orbs[xp_orbs_current_index][Orb.POSITION], player_picking_up_orb.getEyePosition() + Vector.DOWN)), min(verticalAngleOfDirection(directionTowards(xp_orbs[xp_orbs_current_index][Orb.POSITION], player_picking_up_orb.getEyePosition() + Vector.DOWN)), -30)), 12.5 * (player_picking_up_orb.stats[Stat.KNOCKBACK_RECEIVED] / 100), Relativity.TO_WORLD, Impulse.CANCEL_CONTRARY_MOTION_XYZ)
 
                     #wait to see knockback effect before getting killed
                     wait(0.032)
 
-                    #damage
                     damage(player_picking_up_orb, xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER], BURNING_SOUL_ORB_DAMAGE)
                 
                     xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] = false
@@ -70,7 +63,6 @@ rule "XP SYSTEM - - - XP Orbs":
                     playEffect(getAllPlayers(), DynamicEffect.DVA_MICRO_MISSILES_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
                     playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_MINEFIELD_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
 
-                #if the player has alchemist:
                 if player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] > 0 and player_picking_up_orb.amount_of_health_potions < 3 and ALCHEMIST_PROC_CHANCE >= 66:
                     if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0:
                         player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS]
@@ -81,23 +73,19 @@ rule "XP SYSTEM - - - XP Orbs":
                     wait()
                     smallMessage(player_picking_up_orb, "{0} +1 {1}".format(iconString(Icon.RADIOACTIVE), "Health Potion!" if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0 else "Poison Vial!"))
 
-                #if the player has soul harvest:
                 if player_picking_up_orb.talent_ranks[Talent.SOUL_HARVEST] > 0:
                     heal(player_picking_up_orb, player_picking_up_orb, SOUL_HARVEST_HEALING)
                     playEffect(getAllPlayers(), DynamicEffect.BRIGITTE_REPAIR_PACK_IMPACT_SOUND, Color.WHITE, player_picking_up_orb.getPosition(), 100)
                     
-                #if the player has shadowstep:
                 if player_picking_up_orb.talent_ranks[Talent.SHADOWSTEP] > 0:
                     player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.SHADOWSTEP]
                 
-                #remove from array by index
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
                 del xp_orbs[xp_orbs_current_index]
                 if RULE_CONDITION:
                     goto RULE_START
             
-            #explosive duration expired?
             elif xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] < getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
                 #print("removed explosive property")
                 xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] = false

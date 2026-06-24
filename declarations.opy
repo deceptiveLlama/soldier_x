@@ -33,7 +33,9 @@ enum Talent:
     #GUNSLINGER, #30
     #ADRENALINE_RUSH #31
 
+# ============================================================
 # GLOBAL VARIABLES
+# ============================================================
 
 /*
 globalvar dpstracking_dpsTime = createWorkshopSetting(int[1:60], "Settings", "DPS Time", 20, 1)
@@ -62,15 +64,12 @@ globalvar players_with_grim_reaper = []
 globalvar player_with_most_talents = null
 globalvar xp_orbs_current_index
 globalvar player_picking_up_orb
-#--- Bot system (multi-file) ---
+#--- Bot system ---
 globalvar spawn_bots = createWorkshopSettingBool("01. Bots", "Spawn bots?", true, 0)
 globalvar amount_of_bots_and_players = createWorkshopSettingInt("01. Bots", "How many bots and players?", 8, 1, 8, 1)
-globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", false, 1)
+globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", true, 1)
 
-#--- Shop system (multi-file) ---
-#Shop placement is driven per map (in If_map) by two values: shop_location (camera spot) and
-#shop_rotation (horizontal facing angle, degrees). The three talent positions are derived from
-#these plus the arc constants below — tweak a constant here to reshape every map's shop at once.
+#--- Shop system ---
 globalvar shop_location
 globalvar shop_rotation
 globalvar shop_talent_positions
@@ -83,13 +82,18 @@ globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 53
 playervar talent_trigger_times
 playervar railgun_charge
 
-#--- Game clock for responsive HUD: HUD text refreshes its number promptly only when it reads a variable, not the getTotalTimeElapsed() builtin. Set every tick; used only by cooldown DISPLAYS (logic stays on getTotalTimeElapsed()). ---
 globalvar current_time
 
 #--- Debug variables (plain declarations — Workshop Settings assigned in debug files) ---
 globalvar debug_spectator_tools
 globalvar debug_texts = []
 globalvar debug_bot_gigachad
+globalvar debug_bot_load_test = false
+globalvar debug_bot_move = false
+globalvar debug_bot_damage_test = false
+globalvar debug_bot_low_hp = false
+#!define IS_PLAYER(p) ((not p.isDummy()) or (p.isDummy() and debug_bot_load_test))
+#!define SWEEP_WAIT(window, count) wait(max((window) / (count), 0.016))
 
 #--- Testing ---
 globalvar faster_testing
@@ -115,7 +119,9 @@ globalvar xp_orbs = []
 
 
 
+# ============================================================
 # PLAYER VARIABLES
+# ============================================================
 
 enum Stat:
     DAMAGE,
@@ -156,7 +162,6 @@ playervar in_combat = 0
 #playervar indexMemory
 playervar is_electrified = 0
 playervar is_using_ability = []
-playervar is_using_hearthstone = [false, false]
 playervar juggernaut_charge
 playervar talents_offered_in_shop
 playervar player_name = "{0}".format(eventPlayer)
@@ -243,6 +248,22 @@ playervar current_dive_bomb_target = 0
 #--- Shared global defineMember (global_variable[0-49]) ---
 
 #!defineMember highest_grim_reaper_rank_in_match global_variable[0]
+
+#--- Burning Soul serialized-sweep state (global_variable[1-2]) ---
+#!defineMember burning_soul_owners global_variable[1]
+#!defineMember burning_soul_current_owner global_variable[2]
+globalvar burning_soul_sweep_index
+globalvar burning_soul_victim_index
+
+#--- Grim Reaper aim-scan/sweep state (global_variable[3-8]) ---
+#!defineMember current_grim_reaper_candidate global_variable[3]
+#!defineMember grim_reaper_scan_angle global_variable[4]
+#!defineMember grim_reaper_best_angle global_variable[5]
+#!defineMember grim_reaper_valid_targets global_variable[6]
+#!defineMember current_grim_reaper_owner global_variable[7]
+#!defineMember grim_reaper_owners global_variable[8]
+globalvar grim_reaper_scan_index
+globalvar grim_reaper_sweep_index
 
 #Subroutine names
 subroutine buy_debug_talents

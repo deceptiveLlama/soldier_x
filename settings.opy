@@ -15,22 +15,7 @@ settings {
     },
     "gamemodes": {
         "ffa": {
-            "enabledMaps": [
-                "blackForest",
-                "eichenwalde",
-                "hollywood",
-                "chateauGuillard",
-                "ecopointAntarctica",
-                "kanezaka",
-                "malevento",
-                "petra",
-                "paris",
-                "templeOfAnubis",
-                "blizzWorld",
-                "kingsRow",
-                "dorado",
-                "route66"
-            ],
+            "enabledMaps": ENABLED_MAPS,
                 "scoreToWin": 100,
             /*"disabledMaps": [
                 "castillo",

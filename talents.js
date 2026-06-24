@@ -256,6 +256,7 @@ var talents = [
         { macro: "GRIM_REAPER_CAST_TIME_LOCAL", expr: "2.25 - {r} * 0.25", context: "localPlayer" },
         { macro: "GRIM_REAPER_FLIGHT_SPEED", expr: "12 + {r} * 3.6" },
         { macro: "GRIM_REAPER_HEALTH_THRESHOLD", expr: "0.25" },
+        { macro: "GRIM_REAPER_SCAN_WINDOW", expr: "0.128" },
       ],
     },
     {
@@ -413,7 +414,8 @@ var talents = [
         { label: "Orb Damage", base: 100, perRank: 25 },
       ],
       tuning: [
-        { macro: "BURNING_SOUL_DAMAGE", expr: "2.25 + {r} * 0.75" },
+        { macro: "BURNING_SOUL_DAMAGE", expr: "4.5 + {r} * 1.5", context: "burning_soul_current_owner" },
+        { macro: "BURNING_SOUL_TICK", expr: "0.5" },
         { macro: "BURNING_SOUL_ORB_DAMAGE", expr: "75 + xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE_RANK] * 25" },
         { macro: "BURNING_SOUL_AURA_RADIUS", expr: "8" },
         { macro: "BURNING_SOUL_ORB_DURATION", expr: "4" },

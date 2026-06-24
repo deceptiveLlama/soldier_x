@@ -1,11 +1,47 @@
 #!mainFile "soldier_x.opy"
 
+#--- Force Workshop Chamber while this debug file is included (overrides the release ENABLED_MAPS default in soldier_x.opy) ---
+#!define ENABLED_MAPS ["workshopChamber"]
+
 #--- Asset browser (dev tool): browse talents, icons, and hero ability strings. defineMember range variable[600-602], global_variable[110-111] ---
 #!defineMember debug_browser_active variable[600]
 #!defineMember debug_browser_index variable[601]
 #!defineMember debug_browser_category variable[602]
 #!defineMember debug_browser_icon_strings global_variable[110]
 #!defineMember debug_browser_heroes global_variable[111]
+
+#--- Server load sampler (global_variable[100-108]) ---
+#!defineMember debug_srv_load_sum global_variable[100]
+#!defineMember debug_srv_load_timer global_variable[101]
+#!defineMember debug_srv_load_sample_count global_variable[102]
+#!defineMember debug_srv_load_avg global_variable[103]
+#!defineMember debug_srv_load_avg_init global_variable[104]
+#!defineMember debug_srv_load_avg_10s global_variable[105]
+#!defineMember debug_srv_load_samples global_variable[106]
+#!defineMember debug_srv_load_index global_variable[107]
+#!defineMember debug_srv_load_current global_variable[108]
+macro DEBUG_SRV_LOAD_WINDOW = 300   #30s rolling window at 0.1s/sample
+
+#--- Load-test arena (Soldier:76 bots in a ring on Dorado) variable[603-606] ---
+#!defineMember debug_test_spawn_pos variable[603]
+#!defineMember debug_test_initialized variable[604]
+#!defineMember debug_test_damage_target variable[605]
+#!defineMember debug_test_slot variable[606]
+globalvar debug_test_soldier_bots = []
+globalvar debug_test_used_slots = []
+globalvar debug_test_spawn_counter
+globalvar debug_test_init_counter
+globalvar debug_test_radius = 6
+globalvar debug_test_line = false
+globalvar debug_bot_sidestep = false
+macro DEBUG_TEST_CENTER = vect(0, 0, 0)
+macro DEBUG_TEST_BOT_COUNT = 8
+macro DEBUG_TEST_LINE_DIRECTION = Vector.FORWARD
+#!define DEBUG_TEST_RING_POS(idx) (DEBUG_TEST_CENTER + angleToDirection((idx) * 360 / DEBUG_TEST_BOT_COUNT, 0) * debug_test_radius)
+#!define DEBUG_TEST_LINE_POS(idx) (DEBUG_TEST_CENTER + DEBUG_TEST_LINE_DIRECTION * ((idx) + 1) * debug_test_radius)
+#!define DEBUG_TEST_SPAWN_POS(idx) (DEBUG_TEST_LINE_POS(idx) if debug_test_line else DEBUG_TEST_RING_POS(idx))
+macro DEBUG_TEST_DAMAGE_AMOUNT = 1
+macro DEBUG_TEST_DAMAGE_INTERVAL = 0.1
 
 macro DEBUG_BROWSER_DISTANCE = 8
 macro DEBUG_BROWSER_ROW_SPACING = 1.1
@@ -24,17 +60,208 @@ macro DEBUG_FLYCAM_BOOST_MULTIPLIER = 4     #speed multiplier while holding Abil
 
 #--- Workshop Settings (only active when this file is included) ---
 rule "DEBUG - - - Init Workshop Settings":
-    debug_spectator_tools = createWorkshopSettingBool("00. Debug", "Spectator Tools (bot selector, asserts, etc.)", true, 0)
+    debug_spectator_tools = createWorkshopSettingBool("00. Debug", "Debug tools", true, 0)
+    debug_bot_load_test = createWorkshopSettingBool("00. Debug: Server Load", "Server load test", true, 0)
+    debug_test_radius = createWorkshopSettingFloat("00. Debug: Server Load", "Formation Radius (Circle) | Distance Between bots (m)", 6, 1, 20, 1)
+    debug_test_line = createWorkshopSettingBool("00. Debug: Server Load", "Formation: Circle (Off) | Line (On))", false, 2)
+    debug_bot_sidestep = createWorkshopSettingBool("00. Debug: Server Load", "Movement: Side to side", false, 3)
+    debug_bot_move = createWorkshopSettingBool("00. Debug: Server Load", "Movement: Back and forth", false, 4)
+    debug_bot_damage_test = createWorkshopSettingBool("00. Debug: Server Load", "Bots: shoot each other", false, 5)
+    debug_bot_low_hp = createWorkshopSettingBool("00. Debug: Server Load", "Bots: starts with 20% Health", false, 6)
 
 
 #--- Element budget + server load readout (host, visible while playing) ---
 rule "DEBUG - - - Element & Load Readout":
-    hudText(hostPlayer, null, \
+    @Condition debug_spectator_tools == true
+
+    hudText(hostPlayer, \
+        "Real Avg  Init: {0} | First Min: {1} | Last 30s: {2}".format(debug_srv_load_avg_init, debug_srv_load_avg, debug_srv_load_avg_10s), \
         "Texts: {0} | Effects: {1}".format(getNumberOfTextIds(), getNumberOfEntityIds()), \
         "Srv Load: {0} | Avg: {1} | Peak: {2}".format(getServerLoad(), getAverageServerLoad(), getPeakServerLoad()), \
-        HudPosition.RIGHT, 1, \
+        HudPosition.ACTUALLY_LEFT, 1, \
         Color.RED if getAverageServerLoad() > 150 else Color.YELLOW if getAverageServerLoad() >= 100 else Color.LIME_GREEN, \
         Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_STRING_AND_COLOR, SpecVisibility.ALWAYS)
+
+
+rule "DEBUG - - - Real Server Load Average":
+    @Condition debug_spectator_tools == true
+
+    #--- Phase 1: Init (sample until all bots have respawned) ---
+    while getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players \
+        or len([p for p in getAllPlayers() if p.isDummy() and not p.reaper_has_respawned_once]) > 0:
+        debug_srv_load_sample_count += 1
+        debug_srv_load_sum += getServerLoad()
+        debug_srv_load_avg_init = round(debug_srv_load_sum / debug_srv_load_sample_count)
+        wait()
+
+    #--- Reset for phase 2 ---
+    debug_srv_load_sum = 0
+    debug_srv_load_sample_count = 0
+
+    #--- Phase 2: Running (sample for 60 seconds) ---
+    debug_srv_load_timer = getTotalTimeElapsed()
+    while getTotalTimeElapsed() - debug_srv_load_timer < 60:
+        debug_srv_load_sample_count += 1
+        debug_srv_load_sum += getServerLoad()
+        debug_srv_load_avg = round(debug_srv_load_sum / debug_srv_load_sample_count)
+        wait()
+    #--- Phase 3: True rolling average over the last 30 seconds (circular buffer, 300 samples at 0.1s) ---
+    debug_srv_load_samples = []
+    debug_srv_load_sum = 0
+    debug_srv_load_index = 0
+    while true:
+        debug_srv_load_current = getServerLoad()
+        if len(debug_srv_load_samples) < DEBUG_SRV_LOAD_WINDOW:
+            debug_srv_load_samples.append(debug_srv_load_current)
+            debug_srv_load_sum += debug_srv_load_current
+        else:
+            debug_srv_load_sum += debug_srv_load_current - debug_srv_load_samples[debug_srv_load_index]
+            debug_srv_load_samples[debug_srv_load_index] = debug_srv_load_current
+            debug_srv_load_index = (debug_srv_load_index + 1) % DEBUG_SRV_LOAD_WINDOW
+        debug_srv_load_avg_10s = round(debug_srv_load_sum / len(debug_srv_load_samples))
+        wait(0.1)
+
+
+#--- Load-test arena: dynamically backfills Soldier:76 bots so getNumberOfPlayers(Team.ALL) stays at amount_of_bots_and_players, whether the host spectates or plays (OW auto-evicts a bot when the host takes a field seat). ---
+rule "DEBUG - - - Load-Test Arena Setup":
+    @Condition debug_bot_load_test == true
+
+    destroyAllDummies()
+    while RULE_CONDITION:
+        if getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players:
+            createDummy(Hero.SOLDIER, Team.ALL, -1, nearestWalkablePosition(DEBUG_TEST_SPAWN_POS(len([player for player in getAllPlayers() if player.isDummy() == true]))), Vector.FORWARD)
+        wait(1)
+
+
+rule "DEBUG - - - Load-Test Bot Init":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition eventPlayer.debug_test_initialized == false
+
+    eventPlayer.debug_test_initialized = true
+    eventPlayer.reaper_has_respawned_once = true
+    debug_test_used_slots = [bot.debug_test_slot for bot in getAllPlayers() if bot.isDummy() == true and bot.debug_test_initialized == true and bot != eventPlayer]
+    eventPlayer.debug_test_slot = ([candidate_slot for candidate_slot in [0, 1, 2, 3, 4, 5, 6, 7] if not (candidate_slot in debug_test_used_slots)] + [0])[0]
+    eventPlayer.debug_test_spawn_pos = raycast(DEBUG_TEST_SPAWN_POS(eventPlayer.debug_test_slot) + Vector.UP * 5, DEBUG_TEST_SPAWN_POS(eventPlayer.debug_test_slot) + Vector.DOWN * 30, null, null, false).getHitPosition()
+    waitUntil(eventPlayer.hasSpawned() and eventPlayer.isAlive(), 99999)
+    eventPlayer.teleport(eventPlayer.debug_test_spawn_pos)
+
+
+rule "DEBUG - - - Load-Test Damage Ring":
+    @Condition debug_bot_load_test == true
+    @Condition debug_bot_damage_test == true
+
+    while RULE_CONDITION:
+        debug_test_soldier_bots = [player for player in getAllPlayers() if player.isDummy() == true]
+        for debug_test_init_counter in range(len(debug_test_soldier_bots)):
+            debug_test_soldier_bots[debug_test_init_counter].debug_test_damage_target = debug_test_soldier_bots[(debug_test_init_counter + 1) % len(debug_test_soldier_bots)]
+        wait(1)
+
+
+rule "DEBUG - - - Load-Test Bot Facing":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+
+    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.debug_test_damage_target.getPosition() + Vector.UP) if (debug_bot_damage_test and eventPlayer.debug_test_damage_target != null) else (DEBUG_TEST_LINE_DIRECTION if debug_test_line else (directionTowards(eventPlayer.getEyePosition(), vect(DEBUG_TEST_CENTER.x, eventPlayer.getEyePosition().y, DEBUG_TEST_CENTER.z)) + (Vector.UP if eventPlayer.talent_ranks[Talent.FIREBALL] > 0 else vect(0, 0, 0)))), 200, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
+
+
+rule "DEBUG - - - Load-Test Host Init":
+    @Event eachPlayer
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer == hostPlayer
+    @Condition eventPlayer.debug_test_initialized == false
+
+    eventPlayer.debug_test_initialized = true
+    eventPlayer.debug_test_spawn_pos = raycast(DEBUG_TEST_CENTER + Vector.UP * 5, DEBUG_TEST_CENTER + Vector.DOWN * 30, null, null, false).getHitPosition()
+    waitUntil(eventPlayer.hasSpawned() and eventPlayer.isAlive(), 99999)
+    eventPlayer.teleport(eventPlayer.debug_test_spawn_pos)
+
+
+rule "DEBUG - - - Load-Test Respawn Teleport":
+    @Event playerDied
+    @Condition debug_bot_load_test == true
+
+    waitUntil(eventPlayer.hasSpawned() and eventPlayer.isAlive(), 99999)
+    eventPlayer.teleport(eventPlayer.debug_test_spawn_pos)
+
+
+#--- Load-test bot input (piece 4): one rule per talent, force-holds its activation button so button-driven talents reproduce their load. Self-gated on owning the talent. ---
+rule "DEBUG - - - Load-Test Bot Input: Stealth (force-hold Crouch)":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition eventPlayer.talent_ranks[Talent.STEALTH] > 0
+
+    eventPlayer.startForcingButton(Button.CROUCH)
+
+rule "DEBUG - - - Load-Test Bot Input: Fireball (force-cast Interact; aims 45° up via the Facing rule)":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition eventPlayer.talent_ranks[Talent.FIREBALL] > 0
+
+    eventPlayer.startForcingButton(Button.INTERACT)
+
+rule "DEBUG - - - Load-Test Bot Input: Damage (fixed-rate damage pulse to assigned target)":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition debug_bot_damage_test == true
+
+    while RULE_CONDITION:
+        if eventPlayer.debug_test_damage_target != null:
+            damage(eventPlayer.debug_test_damage_target, eventPlayer, DEBUG_TEST_DAMAGE_AMOUNT)
+        wait(DEBUG_TEST_DAMAGE_INTERVAL)
+
+
+rule "DEBUG - - - Load-Test Bot Low HP (clamp to 20% after spawn)":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition debug_bot_low_hp == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition eventPlayer.isAlive() == true
+
+    wait(0.5)
+    if eventPlayer.isAlive():
+        eventPlayer.setHealth(eventPlayer.getMaxHealth() * 0.2)
+
+
+#--- Load-test bot movement: oscillate away-from / toward center so reeval effects/icons track a moving anchor (tests whether movement raises load). Toggle: "Load-Test Bot Movement". ---
+rule "DEBUG - - - Load-Test Bot Movement (oscillate in/out)":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition debug_bot_move == true
+
+    while RULE_CONDITION:
+        eventPlayer.startThrottleInDirection(Vector.BACKWARD, 0.5, Relativity.TO_PLAYER, Throttle.REPLACE_EXISTING, ThrottleReeval.DIRECTION_AND_MAGNITUDE)
+        wait(1)
+        eventPlayer.startThrottleInDirection(Vector.FORWARD, 0.5, Relativity.TO_PLAYER, Throttle.REPLACE_EXISTING, ThrottleReeval.DIRECTION_AND_MAGNITUDE)
+        wait(1)
+
+
+#--- Load-test bot sidestep: oscillate left/right (perpendicular to facing) to test whether lateral movement through cones changes scan load. Toggle: "Load-Test Bot Sidestep". ---
+rule "DEBUG - - - Load-Test Bot Sidestep (oscillate left/right)":
+    @Event eachPlayer
+    @Hero soldier
+    @Condition debug_bot_load_test == true
+    @Condition eventPlayer.isDummy() == true
+    @Condition debug_bot_sidestep == true
+
+    while RULE_CONDITION:
+        eventPlayer.startThrottleInDirection(Vector.LEFT, 0.5, Relativity.TO_PLAYER, Throttle.REPLACE_EXISTING, ThrottleReeval.DIRECTION_AND_MAGNITUDE)
+        wait(1)
+        eventPlayer.startThrottleInDirection(Vector.RIGHT, 0.5, Relativity.TO_PLAYER, Throttle.REPLACE_EXISTING, ThrottleReeval.DIRECTION_AND_MAGNITUDE)
+        wait(1)
 
 
 

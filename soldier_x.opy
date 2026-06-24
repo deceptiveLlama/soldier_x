@@ -6,13 +6,18 @@
 #!define SHOP_BROWSING (localPlayer.browsing_shop and not localPlayer.replacing_talent_show_confirmation and not localPlayer.replacing_talent_show_bought_talents)
 #!define SHOP_IDLE (SHOP_BROWSING and not localPlayer.is_using_skip_talent and not localPlayer.isHoldingButton(Button.RELOAD))
 
+#!allowMacroRedeclaration
+
+#--- Map pool: release default below; "debug - development.opy" redeclares it to Workshop Chamber when that file is included ---
+#!define ENABLED_MAPS ["dorado", "eichenwalde", "hollywood", "chateauGuillard", "ecopointAntarctica", "kanezaka", "malevento", "petra", "paris", "templeOfAnubis", "blizzWorld", "kingsRow", "blackForest", "route66"]
+
 #!setupTags
 #!include "declarations.opy"
 #!include "shop.opy"
-#!include "settings.opy"
 #!include "bots - new system.opy"
 #!include "debug - release.opy"
-##!include "debug - development.opy"
+#!include "debug - development.opy"
+#!include "settings.opy"
 #!include "xp.opy"
 #!include "talents.opy"
 
@@ -75,7 +80,7 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
         goto RULE_START
 
     # INIT FOR PLAYERS (NOT BOTS)
-    if not eventPlayer.isDummy():
+    if IS_PLAYER(eventPlayer):
         eventPlayer.stats[Stat.EYE_HEIGHT] = eventPlayer.getEyePosition().y - eventPlayer.getPosition().y
         /*
         print("total time elapsed: {0}".format(getTotalTimeElapsed()))
@@ -195,17 +200,6 @@ rule "GENERAL - - - [EACH PLAYER] INIT":
     else null, 
     "{0}".format(('<tx00000000B667>')), updateEveryFrame(eventPlayer.getPosition() + Vector.UP), 2, Clip.NONE, WorldTextReeval.VISIBILITY_AND_POSITION, Color.WHITE, SpecVisibility.DEFAULT)
     eventPlayer.grim_reaper_effect_id3 = getLastCreatedText()
-
-    # Grim Reaper Icon
-    createInWorldText(players_with_grim_reaper.exclude(eventPlayer)
-    if eventPlayer.getHealth() < eventPlayer.getMaxHealth() * GRIM_REAPER_HEALTH_THRESHOLD 
-    and not eventPlayer.is_using_ability[Talent.STEALTH] 
-    and not eventPlayer.browsing_shop 
-    and eventPlayer.isAlive() 
-    and localPlayer.grim_reaper_aim_indicator == eventPlayer 
-    else null,
-    "{0}".format(('<tx00000004F741>')), updateEveryFrame(eventPlayer.getPosition() + Vector.UP if not localPlayer.is_using_ability[Talent.GRIM_REAPER] or not localPlayer.casting_success else localPlayer.grim_reaper_feet_destination + Vector.UP), 1.5, Clip.NONE, WorldTextReeval.VISIBILITY_AND_POSITION, Color.WHITE, SpecVisibility.DEFAULT)
-    eventPlayer.grim_reaper_effect_id4 = getLastCreatedText()
     
     #tx0000000015BB = skull
     #tx00000004F741 = skull med >>
@@ -416,6 +410,9 @@ def create_talent_helpers():
     #Railgun Cooldown / Charge
     createInWorldText(localPlayer if localPlayer.talent_ranks[Talent.RAILGUN] > 0 and "{0}".format(localPlayer.isCommunicatingEmote()) == "0" and localPlayer.browsing_shop == false and not localPlayer.is_using_ability[Talent.GRIM_REAPER] and not localPlayer.is_using_hearthstone else null, "{0} {1}%".format(iconString(Icon.BOLT), ceil(localPlayer.railgun_charge)) if localPlayer.talent_ranks[Talent.RAILGUN] > 0 and localPlayer.railgun_charge > 0 else ("{0} Ready".format(iconString(Icon.BOLT))) if localPlayer.talent_ranks[Talent.RAILGUN] > 0 and localPlayer.railgun_charge == 0 and localPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] <= current_time else "{0} Cooldown: {1}".format(iconString(Icon.BOLT), localPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] - current_time if localPlayer.talent_ranks[Talent.RAILGUN] > 0 and localPlayer.railgun_charge == 0 and localPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] > current_time else 0), updateEveryTick(localPlayer.getEyePosition() + (100 * (worldVector(Vector.RIGHT, localPlayer, Transform.ROTATION) + (-0.3 * (angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90))) + 3 * localPlayer.getFacingDirection()))), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE if localPlayer.talent_ranks[Talent.RAILGUN] > 0 and localPlayer.railgun_charge < 100 and localPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] <= current_time else Color.SKY_BLUE if localPlayer.railgun_charge >= 100 else Color.GRAY if localPlayer.talent_ranks[Talent.RAILGUN] > 0 and localPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] > current_time or localPlayer.rockets_cooldown > 0 and localPlayer.talent_ranks[Talent.RAILGUN] == 0 else Color.WHITE, SpecVisibility.NEVER)
 
+    #Grim Reaper Target Skull
+    createInWorldText(localPlayer if localPlayer.talent_ranks[Talent.GRIM_REAPER] > 0 and localPlayer.grim_reaper_aim_indicator != null and localPlayer.grim_reaper_aim_indicator.browsing_shop == false and localPlayer.isAlive() == true and localPlayer.browsing_shop == false else null, "{0}".format(('<tx00000004F741>')), updateEveryFrame(((localPlayer.grim_reaper_aim_indicator.getPosition() + Vector.UP if not localPlayer.is_using_ability[Talent.GRIM_REAPER] or not localPlayer.casting_success else localPlayer.grim_reaper_feet_destination + Vector.UP) + directionTowards(localPlayer.grim_reaper_aim_indicator.getPosition(), localPlayer.getEyePosition()) * 0.1) if localPlayer.grim_reaper_aim_indicator != null else localPlayer.getEyePosition()), 1.5, Clip.NONE, WorldTextReeval.VISIBILITY_AND_POSITION, Color.WHITE, SpecVisibility.DEFAULT)
+
     /*
     #Cancel Juggernaut
     createInWorldText(localPlayer if localPlayer.is_using_ability[Talent.JUGGERNAUT] == true and localPlayer.has_hit_the_ground == true else null, "{0} {1} = Cancel".format(abilityIconString(Hero.REINHARDT, Button.ABILITY_1), buttonString(Button.INTERACT)), updateEveryTick(localPlayer.getEyePosition()), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE, SpecVisibility.NEVER)
@@ -459,7 +456,7 @@ rule "GENERAL - - - [EACH PLAYER] Has Spawned":
         eventPlayer.setKnockbackReceived(eventPlayer.stats[Stat.KNOCKBACK_RECEIVED])
     eventPlayer.setMaxHealth(eventPlayer.stats[Stat.HEALTH])
     eventPlayer.hit_by_talent[Talent.CRYOGENICS] = null
-    if eventPlayer.isDummy():
+    if not IS_PLAYER(eventPlayer):
         eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
     else:
         recalculate_player_speed()
@@ -481,7 +478,7 @@ def detect_input_device():
 
 rule "GENERAL - - - Player Died":
     @Event playerDied
-    @Condition (not eventPlayer.isDummy() or (eventPlayer.isDummy() and eventPlayer.reaper_has_respawned_once == true)) == true
+    @Condition (IS_PLAYER(eventPlayer) or (eventPlayer.isDummy() and eventPlayer.reaper_has_respawned_once == true)) == true
 
     eventPlayer.stopAllDoT()
     /*
@@ -525,7 +522,7 @@ rule "GENERAL - - - Player Died":
     async(dropped_xp_orb, AsyncBehavior.NOOP)
     */
     
-    if not eventPlayer.isDummy():
+    if IS_PLAYER(eventPlayer):
         eventPlayer.in_combat = 0
         if eventPlayer.xp_boost_is_active == true:
             stopChasingVariable(eventPlayer.experience_current)
@@ -550,7 +547,7 @@ rule "GENERAL - - - Player Died":
 
 rule "GENERAL - - - Player Dealt Damage":
     @Event playerDealtDamage
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
 
     #Damage Numbers
     if attacker != victim and eventDamage > 0:
@@ -707,7 +704,7 @@ rule "GENERAL - - - Player Slowed (Hit by Cryogenics Talent)":
         wait(0.032, Wait.RESTART_WHEN_TRUE)
     stopChasingVariable(eventPlayer.cryogenics_slow_amount)
     eventPlayer.cryogenics_slow_amount = eventPlayer.stats[Stat.SPEED]
-    if eventPlayer.isDummy():
+    if not IS_PLAYER(eventPlayer):
         eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
     else:
         recalculate_player_speed()
@@ -765,7 +762,7 @@ def recalculate_damage_received():
 
 rule "GENERAL - - - Restore Speed When No Slow Active":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.is_using_ability[Talent.BANDAGE] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition eventPlayer.is_using_hearthstone == false

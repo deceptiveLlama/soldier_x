@@ -90,7 +90,7 @@ def bloodthirst_effects():
 
 rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.IMMUNITY] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -169,7 +169,7 @@ rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
 
 rule "TALENT SYSTEM - - - [TALENT 5: STEALTH] Use Stealth":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.STEALTH] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -207,7 +207,7 @@ def in_stealth():
     
 rule "TALENT SYSTEM - - - [TALENT 5: STEALTH] Canceled Entering Stealth":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.STEALTH] > 0
     @Condition eventPlayer.entering_stealth == true
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == false
@@ -247,7 +247,7 @@ rule "TALENT SYSTEM - - - [TALENT ##: POISONOUS DAGGER] Hit By Poisonous Dagger"
 
 rule "TALENT SYSTEM - - - [TALENT 5: STEALTH] Break Stealth If Being Loud":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.STEALTH] > 0
     @Condition eventPlayer.is_using_ability[Talent.STEALTH] == true
     @Condition (eventPlayer.isFiringPrimaryFire() or eventPlayer.isFiringSecondaryFire()) == true
@@ -487,7 +487,7 @@ def cancel_ability():
 
 rule "TALENT SYSTEM - - - [DIVE BOMB] Use Dive Bomb":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.DIVE_BOMB] > 0
     @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.SHADOWSTEP] == false
@@ -635,7 +635,7 @@ rule "TALENT SYSTEM - - - [TALENT 8: CRYOGENICS] Hit By Cryogenics":
 
 rule "TALENT SYSTEM - - - [TALENT 8: CRYOGENICS] Travel Time":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.CRYOGENICS] > 0
     @Condition eventPlayer.using_cryogenics == false
     @Condition (eventPlayer.isFiringSecondaryFire() == true or eventPlayer.railgun_projectile_is_in_air == true) == true
@@ -651,7 +651,7 @@ rule "TALENT SYSTEM - - - [TALENT 8: CRYOGENICS] Travel Time":
 
 rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Charge Railgun":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.RAILGUN] > 0
     @Condition eventPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] <= getTotalTimeElapsed()
     @Condition eventPlayer.browsing_shop == false
@@ -705,7 +705,7 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Discharge Railgun":
 */
 rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Use Railgun":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.RAILGUN] > 0
     @Condition eventPlayer.is_using_hearthstone == false
     @Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) == true
@@ -756,7 +756,7 @@ def railgun_projectile_is_in_air():
 
 rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Use Jetpack":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.JETPACK] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -801,7 +801,7 @@ rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Jetpack Effects":
 
 rule "TALENT SYSTEM - - - [TALENT 11: JETPACK] Jetpack Will Have a Delay":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.JETPACK] > 0
     @Condition eventPlayer.isOnGround() == true
     #@Condition (eventPlayer.getCurrentHero() == Hero.SOLDIER or eventPlayer.getCurrentHero() == Hero.BRIGITTE) == true
@@ -869,7 +869,7 @@ rule "TALENT SYSTEM - - - [TALENT 14/31: HEALTH POTIONS/POISON VIAL] Use Health 
 */
 rule "TALENT SYSTEM - - - [TALENT 14: HEALTH POTIONS] Use Health Potion":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -940,7 +940,7 @@ rule "TALENT SYSTEM - - - [TALENT 14/31: HEALTH POTIONS/POISON VIAL] Health Poti
 */
 rule "TALENT SYSTEM - - - [TALENT 14: HEALTH POTIONS] Health Potion Start Recharge":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] > 0
     @Condition eventPlayer.amount_of_health_potions < 3
     
@@ -1009,7 +1009,7 @@ def already_at_full_health():
 
 rule "TALENT SYSTEM - - - [TALENT 16: IGNITE] Ignite Effects":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.isFiringSecondaryFire() == true
     @Condition eventPlayer.talent_ranks[Talent.IGNITE] > 0
     
@@ -1031,7 +1031,7 @@ rule "TALENT SYSTEM - - - [TALENT 16: IGNITE] Ignite Effects":
 
 rule "TALENT SYSTEM - - - [SHADOWSTEP] Use Shadowstep":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.SHADOWSTEP] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -1089,46 +1089,26 @@ rule "TALENT SYSTEM - - - [SHADOWSTEP] Use Shadowstep":
     destroyEffect(eventPlayer.player_temp_effects[7])
 
 rule "TALENT SYSTEM - - - [TALENT 19: BURNING SOUL] Burning Soul Damage Aura":
-    @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
-    @Condition eventPlayer.talent_ranks[Talent.BURNING_SOUL] > 0
-    @Condition eventPlayer.browsing_shop == false
-    @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.isUsingAbility1() == false
-    @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
-    #are there more than one victim in burning soul radius?
-    @Condition (len([player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, BURNING_SOUL_AURA_RADIUS, Team.ALL, LosCheck.SURFACES) 
-        if 
-            player != eventPlayer 
-            and player.is_using_ability[Talent.SHADOWSTEP] == false 
-            and player.is_using_ability[Talent.IMMUNITY] == false 
-            and eventPlayer.is_using_ability[Talent.STEALTH] == false
-            and player.is_using_ability[Talent.STEALTH] == false 
-            and player.browsing_shop == false  
-            and player.isAlive() == true])) > 0
-    
-    eventPlayer.victims_in_burning_soul_radius = [player for player in getPlayersInRadius(eventPlayer.getPosition() + Vector.UP, BURNING_SOUL_AURA_RADIUS, Team.ALL, LosCheck.SURFACES) 
-        if 
-            player != eventPlayer 
-            and player.is_using_ability[Talent.SHADOWSTEP] == false 
-            and player.is_using_ability[Talent.IMMUNITY] == false
-            and eventPlayer.is_using_ability[Talent.STEALTH] == false 
-            and player.is_using_ability[Talent.STEALTH] == false 
-            and player.browsing_shop == false 
-            and player.isAlive() == true]
-    for eventPlayer.fire_soul_loop in range(len(eventPlayer.victims_in_burning_soul_radius)):
-        #playEffect(getAllPlayers(), DynamicEffect.RING_EXPLOSION, Color.ORANGE, updateEveryFrame(eventPlayer.getPosition() + Vector.UP / 2), BURNING_SOUL_AURA_RADIUS * 1.25)
-        eventPlayer.victims_in_burning_soul_radius[eventPlayer.fire_soul_loop].setStatusEffect(eventPlayer, Status.BURNING, 1)
-        damage(eventPlayer.victims_in_burning_soul_radius[eventPlayer.fire_soul_loop], eventPlayer, BURNING_SOUL_DAMAGE)
-    wait(0.25, Wait.IGNORE_CONDITION)
-    eventPlayer.victims_in_burning_soul_radius = []
-    if RULE_CONDITION:
-        goto RULE_START
+    @Condition len([player for player in getAllPlayers() if IS_PLAYER(player) and player.talent_ranks[Talent.BURNING_SOUL] > 0]) > 0
+
+    while RULE_CONDITION:
+        burning_soul_owners = [player for player in getAllPlayers() if IS_PLAYER(player) and player.talent_ranks[Talent.BURNING_SOUL] > 0 and player.browsing_shop == false and player.isAlive() == true and player.isUsingAbility1() == false and player.is_using_ability[Talent.GRIM_REAPER] == false]
+        if len(burning_soul_owners) == 0:
+            wait(BURNING_SOUL_TICK)
+        else:
+            for burning_soul_sweep_index in range(len(burning_soul_owners)):
+                burning_soul_current_owner = burning_soul_owners[burning_soul_sweep_index]
+                burning_soul_current_owner.victims_in_burning_soul_radius = [player for player in getPlayersInRadius(burning_soul_current_owner.getPosition() + Vector.UP, BURNING_SOUL_AURA_RADIUS, Team.ALL, LosCheck.SURFACES) if player != burning_soul_current_owner and player.is_using_ability[Talent.SHADOWSTEP] == false and player.is_using_ability[Talent.IMMUNITY] == false and burning_soul_current_owner.is_using_ability[Talent.STEALTH] == false and player.is_using_ability[Talent.STEALTH] == false and player.browsing_shop == false and player.isAlive() == true]
+                for burning_soul_victim_index in range(len(burning_soul_current_owner.victims_in_burning_soul_radius)):
+                    #playEffect(getAllPlayers(), DynamicEffect.RING_EXPLOSION, Color.ORANGE, updateEveryFrame(burning_soul_current_owner.getPosition() + Vector.UP / 2), BURNING_SOUL_AURA_RADIUS * 1.25)
+                    burning_soul_current_owner.victims_in_burning_soul_radius[burning_soul_victim_index].setStatusEffect(burning_soul_current_owner, Status.BURNING, 1)
+                    damage(burning_soul_current_owner.victims_in_burning_soul_radius[burning_soul_victim_index], burning_soul_current_owner, BURNING_SOUL_DAMAGE)
+                SWEEP_WAIT(BURNING_SOUL_TICK, len(burning_soul_owners))
 
 
 rule "TALENT SYSTEM - - - [TALENT 20: BERSERKER] Use Berserker":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.BERSERKER] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -1198,7 +1178,7 @@ def spawned_with_fireball():
 
 rule "TALENT SYSTEM - - - [TALENT 21: FIREBALL] Use Fireball":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.FIREBALL] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -1311,7 +1291,7 @@ rule "TALENT SYSTEM - - - [TALENT 21: FIREBALL] Fireball Hit Something":
 */
 rule "TALENT SYSTEM - - - [TALENT 22: IGNORE PAIN] Ignore Pain Activated":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.IGNORE_PAIN] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
@@ -1330,7 +1310,7 @@ rule "TALENT SYSTEM - - - [TALENT 22: IGNORE PAIN] Ignore Pain Activated":
 
 rule "TALENT SYSTEM - - - [TALENT 22: IGNORE PAIN] Start Timer When Entering Combat":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.IGNORE_PAIN] > 0
     @Condition eventPlayer.in_combat > 0
     
@@ -1549,23 +1529,32 @@ def casting():
     destroyEffect(eventPlayer.casting_effect_id)
     destroyEffect(eventPlayer.casting_sound_effect_id)
 
-rule "TALENT SYSTEM - - - [GRIM REAPER] Update Aim Indicator":
-    @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
-    @Condition eventPlayer.talent_ranks[Talent.GRIM_REAPER] > 0
-    @Condition eventPlayer.browsing_shop == false
-    @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
-    
-    eventPlayer.grim_reaper_aim_indicator = null
+rule "TALENT SYSTEM - - - [GRIM REAPER] Aim-Indicator Sweep":
+    @Condition len([player for player in getAllPlayers() if IS_PLAYER(player) and player.talent_ranks[Talent.GRIM_REAPER] > 0]) > 0
+
     while RULE_CONDITION:
-        eventPlayer.grim_reaper_aim_indicator = sorted([player for player in getAllPlayers() if player != eventPlayer and player.isAlive() == true and player.getHealth() < player.getMaxHealth() * GRIM_REAPER_HEALTH_THRESHOLD and player.is_using_ability[Talent.STEALTH] == false and player.is_using_ability[Talent.SHADOWSTEP] == false and angleBetweenVectors(eventPlayer.getFacingDirection(), directionTowards(eventPlayer.getEyePosition(), player.getPosition() + Vector.UP)) < atan2Deg(1, distance(eventPlayer.getEyePosition(), player.getPosition() + Vector.UP))], lambda player: angleBetweenVectors(eventPlayer.getFacingDirection(), directionTowards(eventPlayer.getEyePosition(), player.getPosition() + Vector.UP)))[0]
-        wait(0.128)
+        grim_reaper_owners = [player for player in getAllPlayers() if IS_PLAYER(player) and player.talent_ranks[Talent.GRIM_REAPER] > 0 and player.browsing_shop == false and player.isAlive() == true and player.is_using_ability[Talent.GRIM_REAPER] == false]
+        if len(grim_reaper_owners) == 0:
+            wait(GRIM_REAPER_SCAN_WINDOW)
+        else:
+            grim_reaper_valid_targets = [player for player in getAllPlayers() if player.isAlive() == true and player.getHealth() < player.getMaxHealth() * GRIM_REAPER_HEALTH_THRESHOLD and player.is_using_ability[Talent.STEALTH] == false and player.is_using_ability[Talent.SHADOWSTEP] == false]
+            for grim_reaper_sweep_index in range(len(grim_reaper_owners)):
+                current_grim_reaper_owner = grim_reaper_owners[grim_reaper_sweep_index]
+                current_grim_reaper_owner.grim_reaper_aim_indicator = null
+                grim_reaper_best_angle = 999
+                for grim_reaper_scan_index in range(len(grim_reaper_valid_targets)):
+                    current_grim_reaper_candidate = grim_reaper_valid_targets[grim_reaper_scan_index]
+                    if current_grim_reaper_candidate != current_grim_reaper_owner:
+                        grim_reaper_scan_angle = angleBetweenVectors(current_grim_reaper_owner.getFacingDirection(), directionTowards(current_grim_reaper_owner.getEyePosition(), current_grim_reaper_candidate.getPosition() + Vector.UP))
+                        if grim_reaper_scan_angle < atan2Deg(1, distance(current_grim_reaper_owner.getEyePosition(), current_grim_reaper_candidate.getPosition() + Vector.UP)) and grim_reaper_scan_angle < grim_reaper_best_angle:
+                            grim_reaper_best_angle = grim_reaper_scan_angle
+                            current_grim_reaper_owner.grim_reaper_aim_indicator = current_grim_reaper_candidate
+                SWEEP_WAIT(GRIM_REAPER_SCAN_WINDOW, len(grim_reaper_owners))
     
 #NEW GRIM REAPER    
 rule "TALENT SYSTEM - - - [GRIM REAPER] Use Grim Reaper":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.GRIM_REAPER] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
@@ -1693,7 +1682,7 @@ def grim_reaper_casted():
 
 rule "TALENT SYSTEM - - - [TALENT 22: IGNORE PAIN] How Much Damage Was Resisted Inside Combat?":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.IGNORE_PAIN] > 0
     @Condition eventPlayer.in_combat == 0
     
@@ -1855,7 +1844,7 @@ rule "TALENT SYSTEM - - - [ADRENALINE RUSH] Death Reset":
 */
 rule "TALENT SYSTEM - - - [BANDAGE] Use Bandage":
     @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
+    @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.BANDAGE] > 0
     @Condition eventPlayer.talent_trigger_times[Talent.BANDAGE] + talent_base_cooldowns[Talent.BANDAGE] <= getTotalTimeElapsed()
     @Condition eventPlayer.browsing_shop == false

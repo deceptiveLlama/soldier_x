@@ -96,6 +96,7 @@ subroutine bot_start_facing
 
 rule "GENERAL - - - Add Bots":
     @Condition spawn_bots == true
+    @Condition debug_bot_load_test == false
     @Condition getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players
 
     createDummy(Hero.REAPER, Team.ALL, -1, dummy_bot_spawn_position, dummy_bot_spawn_facing)
@@ -106,6 +107,7 @@ rule "GENERAL - - - Add Bots":
 
 rule "BOT - - - Init":
     @Event eachPlayer
+    @Hero reaper
     @Condition eventPlayer.isDummy() == true
 
     eventPlayer.stats = [100, 181.818, 75, 0, 0, 1, 1, 0, 100, 0]
