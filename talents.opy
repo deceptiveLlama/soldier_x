@@ -94,7 +94,7 @@ rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     @Condition eventPlayer.talent_ranks[Talent.IMMUNITY] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.talent_trigger_times[Talent.IMMUNITY] + talent_base_cooldowns[Talent.IMMUNITY] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.IMMUNITY] == false
     @Condition eventPlayer.isHoldingButton(Button.ULTIMATE) == true
     #@Condition eventPlayer.is_using_ability[Talent.GUNSLINGER] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
@@ -102,6 +102,7 @@ rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     @Condition eventPlayer.railgun_charge == 0
     
     eventPlayer.talent_trigger_times[Talent.IMMUNITY] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.IMMUNITY] = true
     eventPlayer.is_using_ability[Talent.IMMUNITY] = true
     eventPlayer.immunity_duration = 100
     chase(eventPlayer.immunity_duration, 0, rate=100 / IMMUNITY_DURATION, ChaseReeval.DESTINATION_AND_RATE)
@@ -182,7 +183,7 @@ rule "TALENT SYSTEM - - - [TALENT 5: STEALTH] Use Stealth":
     @Condition eventPlayer.isOnGround() == true
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
-    @Condition eventPlayer.talent_trigger_times[Talent.STEALTH] + talent_base_cooldowns[Talent.STEALTH] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.STEALTH] == false
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == true
     
     eventPlayer.entering_stealth = true
@@ -265,6 +266,7 @@ def break_stealth():
         playEffect(getAllPlayers(), DynamicEffect.MOIRA_FADE_REAPPEAR, Color.TEAM_2, eventPlayer.getPosition(), 1)
         playEffect(getAllPlayers(), DynamicEffect.MOIRA_FADE_REAPPEAR_SOUND, Color.TEAM_2, eventPlayer.getPosition(), 100)
     eventPlayer.talent_trigger_times[Talent.STEALTH] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.STEALTH] = true
     stopChasingVariable(eventPlayer.entering_stealth_timer)
     eventPlayer.entering_stealth_timer = 0
     if eventPlayer.talent_ranks[Talent.HEALTH_REGEN] > 0:
@@ -277,7 +279,7 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     @Condition eventPlayer.talent_ranks[Talent.JUGGERNAUT] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] + talent_base_cooldowns[Talent.JUGGERNAUT] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.hasStatusEffect(Status.STUNNED) == false
     @Condition eventPlayer.hasStatusEffect(Status.FROZEN) == false
     @Condition eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) == false
@@ -303,6 +305,7 @@ rule "TALENT SYSTEM - - - [JUGGERNAUT] Use Juggernaut":
     eventPlayer.setPrimaryFireEnabled(false)
     eventPlayer.setSecondaryFireEnabled(false)
     eventPlayer.talent_trigger_times[Talent.JUGGERNAUT] = getTotalTimeElapsed() + 60
+    eventPlayer.talent_on_cooldown[Talent.JUGGERNAUT] = true
     eventPlayer.clearStatusEffect(Status.FROZEN)
     if eventPlayer.is_using_ability[Talent.STEALTH] == true:
         async(break_stealth, AsyncBehavior.NOOP)
@@ -498,7 +501,7 @@ rule "TALENT SYSTEM - - - [DIVE BOMB] Use Dive Bomb":
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.talent_trigger_times[Talent.DIVE_BOMB] + talent_base_cooldowns[Talent.DIVE_BOMB] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.DIVE_BOMB] == false
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == true
     @Condition eventPlayer.getAltitude() >= 3.5
     @Condition eventPlayer.hasStatusEffect(Status.STUNNED) == false
@@ -515,6 +518,7 @@ rule "TALENT SYSTEM - - - [DIVE BOMB] Use Dive Bomb":
     if eventPlayer.is_using_ability[Talent.STEALTH] == true:
         async(break_stealth, AsyncBehavior.NOOP)
     eventPlayer.talent_trigger_times[Talent.DIVE_BOMB] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.DIVE_BOMB] = true
     playEffect(getAllPlayers(), DynamicEffect.SOLDIER_SPRINT_START_SOUND, Color.TEAM_1, eventPlayer, 100)
     playEffect(getAllPlayers(), DynamicEffect.DOOMFIST_RISING_UPPERCUT_LEAP, Color.TEAM_2, eventPlayer, 1)
     playEffect(getAllPlayers(), DynamicEffect.ORISA_HALT_IMPLOSION_SOUND, Color.TEAM_2, eventPlayer.getPosition() + Vector.UP, 100)
@@ -639,7 +643,7 @@ rule "TALENT SYSTEM - - - [TALENT 8: CRYOGENICS] Travel Time":
     @Condition eventPlayer.talent_ranks[Talent.CRYOGENICS] > 0
     @Condition eventPlayer.using_cryogenics == false
     @Condition (eventPlayer.isFiringSecondaryFire() == true or eventPlayer.railgun_projectile_is_in_air == true) == true
-    @Condition eventPlayer.talent_trigger_times[Talent.CRYOGENICS] + talent_base_cooldowns[Talent.CRYOGENICS] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.CRYOGENICS] == false
     
     eventPlayer.using_cryogenics = true
     chase(eventPlayer.cryogenics_travel_time, 6, rate=1, ChaseReeval.DESTINATION_AND_RATE)
@@ -653,7 +657,7 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Charge Railgun":
     @Event eachPlayer
     @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.RAILGUN] > 0
-    @Condition eventPlayer.talent_trigger_times[Talent.RAILGUN] + talent_base_cooldowns[Talent.RAILGUN] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.RAILGUN] == false
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
@@ -726,6 +730,7 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Use Railgun":
     eventPlayer.setAmmo(0, eventPlayer.getAmmo(0) + 1)
     eventPlayer.is_using_ability[Talent.RAILGUN] = true
     eventPlayer.talent_trigger_times[Talent.RAILGUN] = getTotalTimeElapsed() - eventPlayer.talent_ranks[Talent.OVERCLOCK]
+    eventPlayer.talent_on_cooldown[Talent.RAILGUN] = true
     if eventPlayer.railgun_charge >= 100:
         playEffect(getAllPlayers(), DynamicEffect.RING_EXPLOSION_SOUND, Color.TEAM_1, eventPlayer.getPosition(), 100)
     if eventPlayer.is_using_ability[Talent.STEALTH] == true:
@@ -1045,7 +1050,7 @@ rule "TALENT SYSTEM - - - [SHADOWSTEP] Use Shadowstep":
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     #@Condition eventPlayer.isCommunicatingEmote() == false
     @Condition "{0}".format(eventPlayer.isCommunicatingEmote()) == "0"
-    @Condition eventPlayer.talent_trigger_times[Talent.SHADOWSTEP] + talent_base_cooldowns[Talent.SHADOWSTEP] - eventPlayer.talent_ranks[Talent.SHADOWSTEP] * SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.SHADOWSTEP] == false
     @Condition eventPlayer.isHoldingButton(Button.JUMP) == true
     
     waitUntil(not eventPlayer.isHoldingButton(Button.JUMP), 0.25)
@@ -1056,6 +1061,7 @@ rule "TALENT SYSTEM - - - [SHADOWSTEP] Use Shadowstep":
         return
     eventPlayer.is_using_ability[Talent.SHADOWSTEP] = true
     eventPlayer.talent_trigger_times[Talent.SHADOWSTEP] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.SHADOWSTEP] = true
     createEffect(eventPlayer, Effect.SOMBRA_HACKING_SOUND, Color.TEAM_1, eventPlayer, 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
     eventPlayer.player_temp_effects[6] = getLastCreatedEntity()
     playEffect(getAllPlayers() if eventPlayer.is_using_ability[Talent.STEALTH] == false else null, DynamicEffect.SOMBRA_TRANSLOCATOR_DISAPPEAR, Color.TEAM_1, eventPlayer.getPosition(), 1)
@@ -1106,13 +1112,33 @@ rule "TALENT SYSTEM - - - [TALENT 19: BURNING SOUL] Burning Soul Damage Aura":
                 SWEEP_WAIT(BURNING_SOUL_TICK, len(burning_soul_owners))
 
 
+rule "TALENT SYSTEM - - - Cooldown System Init (precompute the cooldown-talent list)":
+    cooldown_talents = [Talent.IMMUNITY, Talent.STEALTH, Talent.JUGGERNAUT, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.SHADOWSTEP, Talent.BERSERKER, Talent.FIREBALL, Talent.BANDAGE]
+
+rule "TALENT SYSTEM - - - Cooldown Sweep (maintains talent_on_cooldown flags)":
+    @Condition len([player for player in getAllPlayers() if true in player.talent_on_cooldown]) > 0
+
+    while RULE_CONDITION:
+        cooldown_sweep_players = [player for player in getAllPlayers() if true in player.talent_on_cooldown]
+        if len(cooldown_sweep_players) == 0:
+            wait()
+        else:
+            for cooldown_sweep_index in range(len(cooldown_sweep_players)):
+                current_cooldown_player = cooldown_sweep_players[cooldown_sweep_index]
+                for cooldown_sweep_talent_index in range(len(cooldown_talents)):
+                    current_cooldown_talent = cooldown_talents[cooldown_sweep_talent_index]
+                    if current_cooldown_player.talent_on_cooldown[current_cooldown_talent] and current_cooldown_player.talent_trigger_times[current_cooldown_talent] + talent_base_cooldowns[current_cooldown_talent] - current_cooldown_player.talent_ranks[current_cooldown_talent] * talent_cd_reduction_p_rank[current_cooldown_talent] <= getTotalTimeElapsed():
+                        current_cooldown_player.talent_on_cooldown[current_cooldown_talent] = false
+                wait()
+
+
 rule "TALENT SYSTEM - - - [TALENT 20: BERSERKER] Use Berserker":
     @Event eachPlayer
     @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.BERSERKER] > 0
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
-    @Condition eventPlayer.talent_trigger_times[Talent.BERSERKER] + talent_base_cooldowns[Talent.BERSERKER] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.BERSERKER] == false
     #Berserker
     @Condition eventPlayer.is_using_ability[Talent.BERSERKER] == false
     @Condition eventPlayer.isHoldingButton(Button.ULTIMATE) == true
@@ -1129,6 +1155,7 @@ rule "TALENT SYSTEM - - - [TALENT 20: BERSERKER] Use Berserker":
     eventPlayer.berserker_duration = 0
     chase(eventPlayer.berserker_duration, BERSERKER_DURATION, rate=1, ChaseReeval.DESTINATION_AND_RATE)
     eventPlayer.talent_trigger_times[Talent.BERSERKER] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.BERSERKER] = true
     eventPlayer.setDamageDealt(eventPlayer.stats[Stat.DAMAGE] * 1.25)
     recalculate_damage_received()
     wait(0.5)
@@ -1196,13 +1223,14 @@ rule "TALENT SYSTEM - - - [TALENT 21: FIREBALL] Use Fireball":
     @Condition eventPlayer.is_using_hearthstone == false
     @Condition eventPlayer.fireball_position == null
     @Condition eventPlayer.isHoldingButton(Button.INTERACT) == true
-    @Condition eventPlayer.talent_trigger_times[Talent.FIREBALL] + talent_base_cooldowns[Talent.FIREBALL] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.FIREBALL] == false
     #@Condition eventPlayer.isCommunicatingEmote() == false
     @Condition "{0}".format(eventPlayer.isCommunicatingEmote()) == "0"
     
     if eventPlayer.is_using_ability[Talent.STEALTH] == true:
         async(break_stealth, AsyncBehavior.NOOP)
     eventPlayer.talent_trigger_times[Talent.FIREBALL] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.FIREBALL] = true
     async(fireball_casted, AsyncBehavior.NOOP)
 
 def fireball_casted():
@@ -1846,7 +1874,7 @@ rule "TALENT SYSTEM - - - [BANDAGE] Use Bandage":
     @Event eachPlayer
     @Condition IS_PLAYER(eventPlayer)
     @Condition eventPlayer.talent_ranks[Talent.BANDAGE] > 0
-    @Condition eventPlayer.talent_trigger_times[Talent.BANDAGE] + talent_base_cooldowns[Talent.BANDAGE] <= getTotalTimeElapsed()
+    @Condition eventPlayer.talent_on_cooldown[Talent.BANDAGE] == false
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.isAlive() == true
     #@Condition eventPlayer.isCommunicatingEmote() == false
@@ -1896,4 +1924,5 @@ rule "TALENT SYSTEM - - - [BANDAGE] Use Bandage":
     eventPlayer.bandage_progress = 0
     stopHoT(eventPlayer.bandage_heal_over_time_id)
     eventPlayer.talent_trigger_times[Talent.BANDAGE] = getTotalTimeElapsed()
+    eventPlayer.talent_on_cooldown[Talent.BANDAGE] = true
     

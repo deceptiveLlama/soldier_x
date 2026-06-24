@@ -68,6 +68,8 @@ rule "DEBUG - - - Init Workshop Settings":
     debug_bot_move = createWorkshopSettingBool("00. Debug: Server Load", "Movement: Back and forth", false, 4)
     debug_bot_damage_test = createWorkshopSettingBool("00. Debug: Server Load", "Bots: shoot each other", false, 5)
     debug_bot_low_hp = createWorkshopSettingBool("00. Debug: Server Load", "Bots: starts with 20% Health", false, 6)
+    debug_disable_cooldown_huds = createWorkshopSettingBool("00. Debug: Server Load", "Disable talent cooldown HUDs", false, 7)
+    debug_bot_damage_multi = createWorkshopSettingBool("00. Debug: Server Load", "Bots: random multi-victim (needs 'shoot each other')", false, 8)
 
 
 #--- Element budget + server load readout (host, visible while playing) ---
@@ -216,7 +218,9 @@ rule "DEBUG - - - Load-Test Bot Input: Damage (fixed-rate damage pulse to assign
     @Condition debug_bot_damage_test == true
 
     while RULE_CONDITION:
-        if eventPlayer.debug_test_damage_target != null:
+        if debug_bot_damage_multi:
+            damage(random.choice([player for player in getAllPlayers() if player.isDummy() == true and player != eventPlayer]), eventPlayer, DEBUG_TEST_DAMAGE_AMOUNT)
+        elif eventPlayer.debug_test_damage_target != null:
             damage(eventPlayer.debug_test_damage_target, eventPlayer, DEBUG_TEST_DAMAGE_AMOUNT)
         wait(DEBUG_TEST_DAMAGE_INTERVAL)
 

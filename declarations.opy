@@ -80,6 +80,7 @@ macro SHOP_TALENT_MIDDLE_ELEVATION = 4  #EXTRA degrees the middle talent (index 
 macro INVISIBLE_CHAR = "­"           #U+00AD soft hyphen: renders as nothing but counts as a character (anchors trailing blank padding lines so they aren't trimmed; pads empty talent slots)
 globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 536, 589, 648, 713, 785, 863, 949, 1044, 1149, 1264, 1390, 1529, 1682, 1850, 2035, 2239, 2462, 2709]
 playervar talent_trigger_times
+playervar talent_on_cooldown
 playervar railgun_charge
 
 globalvar current_time
@@ -91,7 +92,9 @@ globalvar debug_bot_gigachad
 globalvar debug_bot_load_test = false
 globalvar debug_bot_move = false
 globalvar debug_bot_damage_test = false
+globalvar debug_bot_damage_multi = false
 globalvar debug_bot_low_hp = false
+globalvar debug_disable_cooldown_huds = false
 #!define IS_PLAYER(p) ((not p.isDummy()) or (p.isDummy() and debug_bot_load_test))
 #!define SWEEP_WAIT(window, count) wait(max((window) / (count), 0.016))
 
@@ -264,6 +267,14 @@ globalvar burning_soul_victim_index
 #!defineMember grim_reaper_owners global_variable[8]
 globalvar grim_reaper_scan_index
 globalvar grim_reaper_sweep_index
+
+#--- Cooldown serialized-sweep state (global_variable[9-11]) ---
+#!defineMember cooldown_sweep_players global_variable[9]
+#!defineMember current_cooldown_player global_variable[10]
+#!defineMember current_cooldown_talent global_variable[11]
+globalvar cooldown_sweep_index
+globalvar cooldown_sweep_talent_index
+globalvar cooldown_talents
 
 #Subroutine names
 subroutine buy_debug_talents
