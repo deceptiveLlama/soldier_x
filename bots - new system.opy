@@ -167,7 +167,7 @@ def bot_state_machine():
 def bot_start_facing():
     @Name "BOT - - - [SUBROUTINE] Start Facing"
 
-    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT], 0) if eventPlayer.bot_state_id == BotState.COMBAT else vect(eventPlayer.bot_face_target.x, eventPlayer.getEyePosition().y if distance(eventPlayer.getPosition(), eventPlayer.bot_face_target) < 0.5 else eventPlayer.bot_face_target.y, eventPlayer.bot_face_target.z)), BOT_TURN_SPEED, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
+    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] * 0.85, 0) if eventPlayer.bot_state_id == BotState.COMBAT else vect(eventPlayer.bot_face_target.x, eventPlayer.getEyePosition().y if distance(eventPlayer.getPosition(), eventPlayer.bot_face_target) < 0.5 else eventPlayer.bot_face_target.y, eventPlayer.bot_face_target.z)), BOT_TURN_SPEED, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
 
 
 # ============================================================
@@ -199,7 +199,7 @@ def bot_sm_combat():
     bot_start_facing()
 
     #--- Reaction time (0.25s if shot, skip if scanned — awareness timer already waited 1s) ---
-    eventPlayer.bot_face_target = eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] / 2, 0)
+    eventPlayer.bot_face_target = eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] * 0.85, 0)
     eventPlayer.bot_throttle_paused = false
     eventPlayer.bot_patrol_destination = eventPlayer.bot_combat_target.getPosition()
     if eventPlayer.bot_was_shot:
