@@ -33,7 +33,6 @@ playervar railgun_projectile_start
 playervar railgun_projectile_player_hit
 playervar jetpack_fuel = 100
 playervar is_lifestealing
-playervar ignite_position
 playervar fireball_position
 playervar ignore_pain_damage_resisted
 playervar ignore_pain_volume
@@ -63,13 +62,14 @@ subroutine buy_stealth
 subroutine buy_juggernaut
 subroutine buy_dive_bomb
 subroutine buy_cryogenics
+subroutine buy_helix
 subroutine buy_railgun
 subroutine buy_grim_reaper
 subroutine buy_jetpack
 subroutine buy_lifesteal_ammo
 subroutine buy_health_regen
 subroutine buy_health_potions
-subroutine buy_ignite
+subroutine buy_explosive_ammo
 subroutine buy_overclock
 subroutine buy_shadowstep
 subroutine buy_burning_soul
@@ -96,7 +96,7 @@ rule "SHOP - - - Using Hearthstone":
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     @Condition eventPlayer.railgun_charge == 0
-    @Condition eventPlayer.in_combat == 0
+    @Condition eventPlayer.in_combat == false
     @Condition eventPlayer.isHoldingButton(Button.RELOAD) == true
     
     wait(0.125, Wait.ABORT_WHEN_FALSE)
@@ -141,108 +141,6 @@ rule "SHOP - - - Using No":
     eventPlayer.is_using_vote_no = true
     casting()
 
-/*
-def using_one_of_the_hearthstones():
-    @Name "SHOP - - - [SUBROUTINE] Using One of the Hearthstones"
-    
-    if eventPlayer.is_using_hearthstone == true:
-        async(player_slowed, AsyncBehavior.RESTART)
-        createEffect(getAllPlayers(), Effect.GOOD_AURA_SOUND, Color.WHITE, updateEveryTick(eventPlayer.getPosition() + Vector.UP), 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
-        eventPlayer.hearthstone_effects_id[0] = getLastCreatedEntity()
-        createEffect(getAllPlayers() if eventPlayer.is_using_ability[Talent.STEALTH] == false else null, Effect.GOOD_AURA, Color.GREEN, updateEveryTick(eventPlayer.getPosition() + Vector.UP), 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
-        eventPlayer.hearthstone_effects_id[1] = getLastCreatedEntity()
-    elif eventPlayer.is_using_skip_talent or eventPlayer.is_using_vote_yes or eventPlayer.is_using_vote_no:
-        createEffect(eventPlayer, Effect.SOMBRA_HACKING_SOUND, Color.WHITE, shop_location if eventPlayer.browsing_shop == true else eventPlayer.getPosition(), 100, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
-        eventPlayer.hearthstone_effects_id[0] = getLastCreatedEntity()
-    chase(eventPlayer.using_hearthstone_timer, 2.75 if faster_testing == false else 0.5, rate=1, ChaseReeval.DESTINATION_AND_RATE)
-    if eventPlayer.is_using_vote_yes or eventPlayer.is_using_vote_no:
-        goto lbl_0
-    wait(2.75 if faster_testing == false else 0.5, Wait.ABORT_WHEN_FALSE)
-    lbl_0:
-    eventPlayer.using_one_of_the_hearthstones = true
-    if eventPlayer.is_using_hearthstone == true:
-        playEffect(getAllPlayers(), DynamicEffect.ORISA_HALT_IMPLOSION, Color.TEAM_1, eventPlayer.getPosition() + Vector.UP, 1)
-        playEffect(getAllPlayers(), DynamicEffect.TRACER_RECALL_DISAPPEAR_SOUND, Color.TEAM_2, eventPlayer.getPosition(), 100)
-        if eventPlayer.is_using_ability[Talent.STEALTH] == true:
-            break_stealth()
-        eventPlayer.setInvisibility(Invis.ALL)
-        eventPlayer.setStatusEffect(null, Status.PHASED_OUT, 9999)
-        eventPlayer.is_using_hearthstone = false
-        async(open_shop, AsyncBehavior.NOOP)
-        eventPlayer.browsing_shop = true
-        async(stopped_using_hearthstone, AsyncBehavior.RESTART)
-        return
-    elif eventPlayer.is_using_skip_talent == true:
-        goto lbl_1
-    elif eventPlayer.is_using_vote_yes == true:
-        waitUntil(not eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) or eventPlayer.isHoldingButton(Button.SECONDARY_FIRE), 2.75 if faster_testing == false else 0.5)
-        if not eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) or eventPlayer.isHoldingButton(Button.SECONDARY_FIRE):
-            goto lbl_2
-        if eventPlayer.replacing_talent_show_confirmation == true:
-            eventPlayer.replacing_talent_show_bought_talents = true
-            goto lbl_3
-        playEffect(eventPlayer, DynamicEffect.RING_EXPLOSION_SOUND, Color.WHITE, shop_location, 100)
-        lbl_2:
-        lbl_3:
-        async(stopped_using_hearthstone, AsyncBehavior.RESTART)
-        return
-    elif eventPlayer.is_using_vote_no == true:
-        waitUntil(not eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) or eventPlayer.isHoldingButton(Button.PRIMARY_FIRE), 2.75 if faster_testing == false else 0.5)
-        if not eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) or eventPlayer.isHoldingButton(Button.PRIMARY_FIRE):
-            goto lbl_4
-        if eventPlayer.replacing_talent_show_confirmation == true:
-            eventPlayer.replacing_talent_cancelled = true
-            goto lbl_5
-        playEffect(eventPlayer, DynamicEffect.DEBUFF_IMPACT_SOUND, Color.WHITE, shop_location, 100)
-        lbl_4:
-        lbl_5:
-        async(stopped_using_hearthstone, AsyncBehavior.RESTART)
-        return
-    lbl_1:
-    async(stopped_using_hearthstone, AsyncBehavior.RESTART)
-    
-    if eventPlayer.amount_of_bonus_talents > 0:
-        eventPlayer.amount_of_bonus_talents -= 1
-    if eventPlayer.is_using_skip_talent == true and eventPlayer.amount_of_bonus_talents > 0:
-        eventPlayer.is_using_skip_talent = false
-        bigMessage(eventPlayer, "{0} Bonus Talent Left!".format(eventPlayer.amount_of_bonus_talents))
-        open_shop()
-        eventPlayer.selected_talent_in_shop = 1
-        eventPlayer.selected_talent_position = shop_talent_positions[1]
-        eventPlayer.startCamera(shop_location, eventPlayer.selected_talent_position, 12)
-        wait(1)
-        return
-    
-    eventPlayer.is_using_skip_talent = false
-    eventPlayer.browsing_shop = false
-    eventPlayer.selected_talent_position = shop_talent_positions[1]
-    eventPlayer.can_enter_shop = false
-    eventPlayer.experience_current = 0
-    #if eventPlayer.talent_ranks[Talent.FIREBALL] > 0 or eventPlayer.talent_ranks[Talent.JUGGERNAUT] > 0:
-        #async(spawned_with_fireball, AsyncBehavior.RESTART)
-    #Reset selection of a talent to the middle
-    eventPlayer.selected_talent_in_shop = 1
-    eventPlayer.skipped_a_talent = true
-    eventPlayer.is_respawning = true
-    eventPlayer.respawn()
-*/
-/*
-def stopped_using_hearthstone():
-    @Name "SHOP - - - [SUBROUTINE] Stopped Using Hearthstone"
-    
-    eventPlayer.using_one_of_the_hearthstones = false
-    eventPlayer.is_using_hearthstone = false
-    eventPlayer.is_using_skip_talent = false
-    eventPlayer.is_using_vote_yes = false
-    eventPlayer.is_using_vote_no = false
-    stopChasingVariable(eventPlayer.using_hearthstone_timer)
-    eventPlayer.using_hearthstone_timer = 0
-    #if eventPlayer.is_using_ability[Talent.CRYOGENICS] == false:
-    #eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
-    #__end__()
-    destroyEffect(eventPlayer.hearthstone_effects_id[0])
-    destroyEffect(eventPlayer.hearthstone_effects_id[1])
-*/
 def open_shop():
     @Name "SHOP - - - [SUBROUTINE] Open Shop"
 
@@ -418,6 +316,7 @@ rule "SHOP - - - Buy Talent":
         update_player_with_most_talent()
         #Remove the talent from talent_ranks
         eventPlayer.talent_ranks[eventPlayer.current_talent_replace_or_buy] = 0
+        eventPlayer.talent_on_cooldown[eventPlayer.current_talent_replace_or_buy] = false
         #Remove the talent you removed from bought_talents
         eventPlayer.bought_talents = eventPlayer.bought_talents.exclude(eventPlayer.bought_talents[eventPlayer.selected_bought_talent])
         eventPlayer.bought_talents.append(eventPlayer.talents_offered_in_shop[eventPlayer.selected_talent_in_shop])
@@ -553,8 +452,8 @@ def buy_or_upgrade_talent():
         if eventPlayer.talent_ranks[Talent.HEALTH_POTIONS] == 1:
             eventPlayer.amount_of_health_potions = 3
         buy_health_potions()
-    elif eventPlayer.current_talent_replace_or_buy == [Talent.IGNITE]:
-        buy_ignite()
+    elif eventPlayer.current_talent_replace_or_buy == [Talent.EXPLOSIVE_AMMO]:
+        buy_explosive_ammo()
     elif eventPlayer.current_talent_replace_or_buy == [Talent.OVERCLOCK]:
         buy_overclock()
     elif eventPlayer.current_talent_replace_or_buy == [Talent.SHADOWSTEP]:
@@ -575,6 +474,8 @@ def buy_or_upgrade_talent():
         buy_alchemist()
     elif eventPlayer.current_talent_replace_or_buy == [Talent.GIGACHAD]:
         buy_gigachad()
+    elif eventPlayer.current_talent_replace_or_buy == [Talent.HELIX]:
+        buy_helix()
     #elif eventPlayer.current_talent_replace_or_buy == [Talent.GUNSLINGER]:
         #buy_gunslinger()
     #elif eventPlayer.current_talent_replace_or_buy == [Talent.ADRENALINE_RUSH]:
@@ -648,7 +549,7 @@ def buy_stealth():
         destroyEffect(eventPlayer.stealth_effect_id)
         destroyEffect(eventPlayer.stealth_effect_id2)
         destroyEffect(eventPlayer.stealth_sound_id)
-        destroyEffect(eventPlayer.stealth_stun_text_id)
+        destroyEffect(eventPlayer.stealth_hack_text_id)
         eventPlayer.talents_you_do_not_have.append(Talent.STEALTH)
         eventPlayer.talents_you_do_not_have.remove(Talent.POISONOUS_DAGGER)
         return
@@ -663,9 +564,9 @@ def buy_stealth():
         createEffect(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true else null, Effect.ECHO_CLONING, Color.TEAM_1, eventPlayer, 1, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
         eventPlayer.stealth_effect_id2 = getLastCreatedEntity()
 
-        createInWorldText(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true and eventPlayer.current_stealth_target != null and distance(eventPlayer.getPosition(), eventPlayer.current_stealth_target.getPosition()) < 10 else null, "{0}{1}".format("{0}: ".format(buttonString(Button.MELEE)) if eventPlayer.using_gamepad else "[{0}]: ".format(buttonString(Button.MELEE)), "Stun!" if eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] == 0 else "Poison & Stun!"), updateEveryFrame(eventPlayer.current_stealth_target.getPosition() + Vector.UP), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
+        createInWorldText(eventPlayer if eventPlayer.is_using_ability[Talent.STEALTH] == true and eventPlayer.current_stealth_target != null and distance(eventPlayer.getPosition(), eventPlayer.current_stealth_target.getPosition()) < 10 else null, "{0}{1}".format("{0}: ".format(buttonString(Button.MELEE)) if eventPlayer.using_gamepad else "[{0}]: ".format(buttonString(Button.MELEE)), "Hack!" if eventPlayer.talent_ranks[Talent.POISONOUS_DAGGER] == 0 else "Poison & Hack!"), updateEveryFrame(eventPlayer.current_stealth_target.getPosition() + Vector.UP), 1, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE, SpecVisibility.DEFAULT)
 
-        eventPlayer.stealth_stun_text_id = getLastCreatedEntity()
+        eventPlayer.stealth_hack_text_id = getLastCreatedEntity()
 
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.POISONOUS_DAGGER)
@@ -713,6 +614,26 @@ def buy_cryogenics():
     if eventPlayer.talent_ranks[Talent.CRYOGENICS] == 1:
         eventPlayer.talents_you_do_not_have.remove(Talent.CRYOGENICS)
 
+def buy_helix():
+    @Name "TALENT SYSTEM - - - [TALENT 28: HELIX ROCKETS] [SUBROUTINE] Buy Helix Rockets"
+
+    if eventPlayer.replacing_talent_show_bought_talents == true:
+        eventPlayer.setSecondaryFireEnabled(false)
+        eventPlayer.talents_you_do_not_have.append(Talent.HELIX)
+        eventPlayer.talents_you_do_not_have.append(Talent.FIREBALL)
+        eventPlayer.talents_you_do_not_have.append(Talent.RAILGUN)
+        eventPlayer.talents_you_do_not_have.remove(Talent.CRYOGENICS)
+        return
+    if eventPlayer.talent_ranks[Talent.HELIX] == 1:
+        eventPlayer.talents_you_do_not_have.remove(Talent.HELIX)
+        eventPlayer.talents_you_do_not_have.remove(Talent.FIREBALL)
+        eventPlayer.talents_you_do_not_have.remove(Talent.RAILGUN)
+        if len(eventPlayer.bought_talents) < 5:
+            eventPlayer.possible_talents.append(Talent.CRYOGENICS)
+        eventPlayer.talents_you_do_not_have.append(Talent.CRYOGENICS)
+        eventPlayer.talent_trigger_times[Talent.HELIX] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.HELIX]
+        eventPlayer.setSecondaryFireEnabled(true)
+
 def buy_railgun():
     @Name "TALENT SYSTEM - - - [TALENT 9: RAILGUN] [SUBROUTINE] Buy Railgun"
     
@@ -722,17 +643,21 @@ def buy_railgun():
         destroyEffect(eventPlayer.railgun_charge_sound)
         eventPlayer.railgun_discharge = 0
         eventPlayer.railgun_charge = 0
-        eventPlayer.setSecondaryFireEnabled(true)
+        recalculate_secondary_fire()
         eventPlayer.railgun_projectile_start = []
         eventPlayer.railgun_projectile_player_hit = []
         eventPlayer.talents_you_do_not_have.append(Talent.RAILGUN)
+        eventPlayer.talents_you_do_not_have.append(Talent.HELIX)
+        eventPlayer.talents_you_do_not_have.append(Talent.FIREBALL)
         #eventPlayer.talents_you_do_not_have.append(Talent.BOMBARDMENT)
         eventPlayer.talents_you_do_not_have.remove(Talent.OVERCLOCK)
+        eventPlayer.talents_you_do_not_have.remove(Talent.CRYOGENICS)
         return
     if eventPlayer.talent_ranks[Talent.RAILGUN] == 1:
         eventPlayer.talent_trigger_times[Talent.RAILGUN] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.RAILGUN]
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.OVERCLOCK)
+            eventPlayer.possible_talents.append(Talent.CRYOGENICS)
         eventPlayer.railgun_projectile_start = []
         eventPlayer.railgun_projectile_player_hit = []
         chase(eventPlayer.railgun_discharge, 0, rate=1, ChaseReeval.DESTINATION_AND_RATE)
@@ -743,8 +668,11 @@ def buy_railgun():
         createEffect(getAllPlayers() if eventPlayer.railgun_charge == 100 else null, Effect.WINSTON_TESLA_CANNON_TARGET_SOUND, Color.TEAM_1, eventPlayer, 75, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
         eventPlayer.railgun_charge_sound = getLastCreatedEntity()
         eventPlayer.talents_you_do_not_have.remove(Talent.RAILGUN)
+        eventPlayer.talents_you_do_not_have.remove(Talent.HELIX)
+        eventPlayer.talents_you_do_not_have.remove(Talent.FIREBALL)
         #eventPlayer.talents_you_do_not_have.remove(Talent.BOMBARDMENT)
         eventPlayer.talents_you_do_not_have.append(Talent.OVERCLOCK)
+        eventPlayer.talents_you_do_not_have.append(Talent.CRYOGENICS)
 
 def buy_grim_reaper():
     @Name "TALENT SYSTEM - - - [TALENT 10: GRIM REAPER] [SUBROUTINE] Buy Grim Reaper"
@@ -752,14 +680,12 @@ def buy_grim_reaper():
     async(which_players_have_grim_reaper, AsyncBehavior.RESTART)
     if eventPlayer.replacing_talent_show_bought_talents == true:
         eventPlayer.talents_you_do_not_have.append(Talent.GRIM_REAPER)
-        eventPlayer.talents_you_do_not_have.append(Talent.FIREBALL)
         #Group B exclusivity: re-add Juggernaut here when it is re-enabled (kept commented while Juggernaut is disabled, to avoid offering an unbuyable talent)
         #eventPlayer.talents_you_do_not_have.append(Talent.JUGGERNAUT)
         return
     if eventPlayer.talent_ranks[Talent.GRIM_REAPER] == 1:
         eventPlayer.talent_trigger_times[Talent.GRIM_REAPER] = -talent_base_cooldowns[Talent.GRIM_REAPER]
         eventPlayer.talents_you_do_not_have.remove(Talent.GRIM_REAPER)
-        eventPlayer.talents_you_do_not_have.remove(Talent.FIREBALL)
         #Group B exclusivity: harmless no-op while Juggernaut is disabled; keeps it out of the pool once re-enabled (mirrors buy_fireball)
         eventPlayer.talents_you_do_not_have.remove(Talent.JUGGERNAUT)
     if eventPlayer.talent_ranks[Talent.GRIM_REAPER] > 1:
@@ -790,7 +716,7 @@ def buy_jetpack():
 
         eventPlayer.jetpack_beam_effect_id = getLastCreatedEntity()
 
-        chase(eventPlayer.jetpack_fuel, 0 if eventPlayer.is_using_ability[Talent.JETPACK] == true else 100, rate=25 - eventPlayer.talent_ranks[Talent.JETPACK] * 3 if eventPlayer.is_using_ability[Talent.JETPACK] == true else 10, ChaseReeval.DESTINATION_AND_RATE)
+        chase(eventPlayer.jetpack_fuel, 0 if eventPlayer.is_using_ability[Talent.JETPACK] == true else 100, rate=JETPACK_FUEL_DRAIN if eventPlayer.is_using_ability[Talent.JETPACK] == true else 10, ChaseReeval.DESTINATION_AND_RATE)
         eventPlayer.talents_you_do_not_have.remove(Talent.JETPACK)
 
 def buy_lifesteal_ammo():
@@ -852,15 +778,14 @@ def buy_health_potions():
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.ALCHEMIST)
 
-def buy_ignite():
-    @Name "TALENT SYSTEM - - - [TALENT 16: IGNITE] [SUBROUTINE] Buy Ignite"
+def buy_explosive_ammo():
+    @Name "TALENT SYSTEM - - - [TALENT 16: EXPLOSIVE_AMMO] [SUBROUTINE] Buy Explosive Ammo"
     
     if eventPlayer.replacing_talent_show_bought_talents == true:
-        eventPlayer.ignite_position = eventPlayer.getEyePosition()
-        eventPlayer.talents_you_do_not_have.append(Talent.IGNITE)
+        eventPlayer.talents_you_do_not_have.append(Talent.EXPLOSIVE_AMMO)
         return
-    if eventPlayer.talent_ranks[Talent.IGNITE] == 1:
-        eventPlayer.talents_you_do_not_have.remove(Talent.IGNITE)
+    if eventPlayer.talent_ranks[Talent.EXPLOSIVE_AMMO] == 1:
+        eventPlayer.talents_you_do_not_have.remove(Talent.EXPLOSIVE_AMMO)
 
 def buy_overclock():
     @Name "TALENT SYSTEM - - - [TALENT 17: OVERCLOCK] [SUBROUTINE] Buy Overclock"
@@ -934,7 +859,8 @@ def buy_fireball():
         #Disabled because Juggernaut disabled
         #eventPlayer.talents_you_do_not_have.append(Talent.JUGGERNAUT)
         eventPlayer.talents_you_do_not_have.append(Talent.FIREBALL)
-        eventPlayer.talents_you_do_not_have.append(Talent.GRIM_REAPER)
+        eventPlayer.talents_you_do_not_have.append(Talent.HELIX)
+        eventPlayer.talents_you_do_not_have.append(Talent.RAILGUN)
         eventPlayer.talents_you_do_not_have.remove(Talent.PYROMANIAC)
         return
     if eventPlayer.talent_ranks[Talent.FIREBALL] == 1:
@@ -942,10 +868,10 @@ def buy_fireball():
         eventPlayer.fireball_position = null
         if len(eventPlayer.bought_talents) < 5:
             eventPlayer.possible_talents.append(Talent.PYROMANIAC)
-        eventPlayer.talents_you_do_not_have.remove(Talent.JUGGERNAUT)
         eventPlayer.talents_you_do_not_have.remove(Talent.FIREBALL)
+        eventPlayer.talents_you_do_not_have.remove(Talent.HELIX)
+        eventPlayer.talents_you_do_not_have.remove(Talent.RAILGUN)
         eventPlayer.talents_you_do_not_have.append(Talent.PYROMANIAC)
-        eventPlayer.talents_you_do_not_have.remove(Talent.GRIM_REAPER)
 
 def buy_ignore_pain():
     @Name "TALENT SYSTEM - - - [TALENT 22: IGNORE PAIN] [SUBROUTINE] Buy Ignore Pain"

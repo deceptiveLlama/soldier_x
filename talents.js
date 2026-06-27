@@ -26,6 +26,45 @@ var ARROW = " » "                   // " » " (U+00BB) between current and upgr
 //--- (must mirror orb_rarity_colors in declarations.opy: WHITE,GREEN,BLUE,PURPLE,ORANGE,ORANGE) ---
 var ORB_HEX = ["FFFFFFFF", "45FF57FF", "27AAFFFF", "A149C5FF", "EC9900FF", "EC9900FF"]
 
+// ============================================================================
+// TALENT DEFINITIONS — single source of truth for talent DATA.
+//   Editing a field below regenerates the whole project at compile time
+//   (generateTalents() in declarations.opy emits the Talent enum, every talent_*
+//   array, and each tuning macro). No .opy edit is needed to change these values —
+//   except the two cases flagged below.
+//
+// APPLIES EVERYWHERE (change it here and you're done):
+//   id                     Identity -> enum member Talent.<ID-uppercased>; also how
+//                          requires_any_of / unlocks / locks reference this talent.
+//                          Array order here = enum order (reorder freely, it all re-derives).
+//   name / icon / keybind / description    Shop + HUD text.
+//   cooldown               Base cooldown in seconds (drives the cooldown sweep + HUD).
+//   cd_reduction_per_rank  Seconds shaved off the cooldown per rank.
+//   requires_any_of: [ids] Prerequisite(s); any one suffices. Systemic — the offer pool,
+//                          the "Unlocks" text, and removal-blocking all derive from it.
+//   sweep_cooldown: true   (optional) cooldown is cleared by the global sweep — for
+//                          button on/off cooldowns. Omit for passive / charge / on-hit ones.
+//   disabled: true         (optional) talent exists in code but is NOT offered in the shop.
+//   tuning: [{macro, expr, context}]   GAMEPLAY numbers -> `macro <MACRO> = <expr>`.
+//                          `{r}` becomes <context||eventPlayer>.talent_ranks[Talent.<ID>].
+//                          This is what the abilities actually use at runtime.
+//
+// DISPLAY-ONLY (changes the shop TEXT, not the gameplay — the gotcha):
+//   stats: [{label, base, perRank, suffix, decimals}]   The shop stat lines; shown value
+//                          at rank r = base + (r-1)*perRank (perRank 0 = flat). This is
+//                          ONLY the printed number — the real value lives in tuning[] (or
+//                          still inline in a rule). To rebalance for real, edit BOTH, or
+//                          the shop will lie. (See talents below for suffix/range examples.)
+//   unlocks / locks: [ids] Only feed the "Unlocks: / Locks:" text on the shop card. The
+//                          actual lock/unlock ENFORCEMENT is still hardcoded in shop.opy's
+//                          buy_* subroutines (not yet data-driven).
+//
+// NOT HERE (gameplay CODE, lives in the .opy): a talent's behavior — its use-rule and
+//   buy_<id>() subroutine. Adding a brand-new talent or fully removing one still needs
+//   that code; and commenting a talent out here also means removing/guarding its .opy
+//   rules, or the compile breaks on the now-missing Talent.<ID>.
+//   (upgrade_information is an unused leftover field — the generator ignores it.)
+// ============================================================================
 var talents = [
     {
       id: "bloodthirst",
@@ -37,7 +76,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: ["berserker"],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Healing", base: 25.2, perRank: 6.2, suffix: "%" },
@@ -48,6 +87,7 @@ var talents = [
     },
     {
       id: "immunity",
+      sweep_cooldown: true,
       name: "Immunity",
       icon: "('<tx0C00000000004120>')",
       keybind: '"[[Q]]"',
@@ -56,7 +96,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Duration, +Healing Received]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: ["berserker"],
       stats: [
         { label: "Duration", base: 5, perRank: 1.25, suffix: "s", decimals: 1 },
@@ -79,13 +119,13 @@ var talents = [
       upgrade_information: "[Upgrade: +Shields]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
-        { label: "Shields", base: 75, perRank: 18.75 },
+        { label: "Shields", base: 50, perRank: 12.5 },
       ],
       tuning: [
-        { macro: "CYBERNETICS_SHIELD_AMOUNT", expr: "56.25 + {r} * 18.75" },
+        { macro: "CYBERNETICS_SHIELD_AMOUNT", expr: "37.5 + {r} * 12.5" },
       ],
     },
     {
@@ -98,7 +138,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Healing per orb", base: 125, perRank: 31.25 },
@@ -117,7 +157,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: ["stealth"],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Poison Damage", base: 100, perRank: 25 },
@@ -130,26 +170,31 @@ var talents = [
     },
     {
       id: "stealth",
+      sweep_cooldown: true,
       name: "Stealth",
       icon: "('<tx0C000000000207B6>')",
-      keybind: '"[Hold: [CTRL]]"',
-      description: "Enter stealth when crouching out of combat. Melee from stealth will stun the target. Taking damage or using damage dealing abilities will break stealth.",
-      cooldown: 10,
-      upgrade_information: "[Upgrade: +Stealth Duration, +Stun Duration]",
-      cd_reduction_per_rank: 0,
+      keybind: '"[Hold: [CTRL] (On Ground)]"',
+      description: "Enter stealth when crouching out of combat. Melee from stealth hacks the target, briefly preventing activation of their talents. Taking damage or using damage dealing abilities will break stealth.",
+      cooldown: 22.5,
+      upgrade_information: "[Upgrade: +Hack Duration, -Cooldown]",
+      cd_reduction_per_rank: 2.5,
       requires_any_of: [],
-      unlocks: "poisonous_dagger",
+      unlocks: ["poisonous_dagger"],
       locks: [],
       stats: [
-        { label: "Stun Duration", base: 1, perRank: 0.2, suffix: "s", decimals: 1 },
-        { label: "Cooldown", base: 10, perRank: 0, suffix: "s" },
+        { label: "Hack Duration", base: 2, perRank: 0.5, suffix: "s", decimals: 1 },
+        { label: "Stealth Duration", base: 10, perRank: 0, suffix: "s", decimals: 1 },
+        { label: "Cooldown", base: 20, perRank: -2.5, suffix: "s", decimals: 1 },
       ],
       tuning: [
-        { macro: "STEALTH_STUN_DURATION", expr: "0.8 + {r} * 0.2" },
+        { macro: "STEALTH_HACK_DURATION", expr: "1.5 + {r} * 0.5" },
+        { macro: "STEALTH_DURATION", expr: "10" },
       ],
     },
     {
       id: "juggernaut",
+      disabled: true,
+      sweep_cooldown: true,
       name: "Juggernaut",
       icon: "abilityIconString(Hero.DOOMFIST, Button.SECONDARY_FIRE)",
       keybind: '"[[F]]"',
@@ -158,8 +203,8 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
-      locks: ["fireball"],
+      unlocks: [],
+      locks: [],
       stats: [
         { label: "Damage", base: 150, perRank: 25 },
         { label: "Cooldown", base: 20, perRank: 0, suffix: "s" },
@@ -171,6 +216,7 @@ var talents = [
     },
     {
       id: "dive_bomb",
+      sweep_cooldown: true,
       name: "Dive Bomb",
       icon: "('<tx0C000000000207B7>')",
       keybind: '"[[CTRL] (In Air)]"',
@@ -179,7 +225,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Damage", base: 75, perRank: 18.75, maxBase: 150, maxPerRank: 37.5 },
@@ -192,6 +238,7 @@ var talents = [
     },
     {
       id: "cryogenics",
+      sweep_cooldown: true,
       name: "Cryogenics",
       icon: "('<tx0C0000000002D38F>')",
       keybind: '"[[RIGHTCLICK]]"',
@@ -199,34 +246,35 @@ var talents = [
       cooldown: 0,
       upgrade_information: "[Upgrade: +Slow Amount, +Slow Duration]",
       cd_reduction_per_rank: 0,
-      requires_any_of: [],
-      unlocks: null,
+      requires_any_of: ["railgun", "helix"],
+      unlocks: [],
       locks: [],
       stats: [
-        { label: "Slow Amount", base: 60, perRank: 10, suffix: "%" },
-        { label: "Slow Duration", base: 2.2, perRank: 0.2, suffix: "s", decimals: 1 },
+        { label: "Slow Amount", base: 35, perRank: 8.125, suffix: "%" },
+        { label: "Slow Duration", base: 2.5, perRank: 0, suffix: "s", decimals: 1 },
       ],
       tuning: [
-        { macro: "CRYOGENICS_SLOW_DURATION", expr: "2 + eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 0.2" },
-        { macro: "CRYOGENICS_SLOW_AMOUNT", expr: "eventPlayer.stats[Stat.SPEED] * (0.5 - eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 0.1)" },
+        { macro: "CRYOGENICS_SLOW_DURATION", expr: "2.5" },
+        { macro: "CRYOGENICS_SLOW_AMOUNT", expr: "eventPlayer.stats[Stat.SPEED] * (73.125 - eventPlayer.hit_by_talent[Talent.CRYOGENICS].talent_ranks[Talent.CRYOGENICS] * 8.125) / 100" },
       ],
     },
     {
       id: "railgun",
+      sweep_cooldown: true,
       name: "Railgun",
       icon: "iconString(Icon.BOLT)",
       keybind: '"[[RIGHTCLICK] + [LEFTCLICK]]"',
-      description: "Replace your secondary fire with a railgun attachment. Railgun will count as your secondary fire. Hitscan ability.",
-      cooldown: 6,
+      description: "Secondary Fire: Hold to charge a magnetic railgun, then pull the trigger to let loose a devastating hitscan laser.",
+      cooldown: 12,
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: "overclock",
-      locks: [/*"bombardment"*/],
+      unlocks: ["overclock", "cryogenics"],
+      locks: ["helix", "fireball"],
       stats: [
         { label: "Damage", base: 100, perRank: 25 },
         { label: "Headshot Damage", base: 150, perRank: 0, suffix: "%" },
-        { label: "Cooldown", base: 6, perRank: 0, suffix: "s" },
+        { label: "Cooldown", base: 12, perRank: 0, suffix: "s" },
       ],
       tuning: [
         { macro: "RAILGUN_ADDITIONAL_DAMAGE", expr: "112.5 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 37.5 if eventWasCriticalHit else 75 - eventDamage + attacker.talent_ranks[Talent.RAILGUN] * 25" },
@@ -242,8 +290,8 @@ var talents = [
       upgrade_information: "[Upgrade: +Cast Speed, +Flight Speed]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
-      locks: ["fireball"],
+      unlocks: [],
+      locks: [],
       stats: [
         { label: "Cast Time", base: 2, perRank: -0.25, suffix: "s", decimals: 2 },
         { label: "Flight Speed", base: 15.6, perRank: 3.6, decimals: 1 },
@@ -269,32 +317,33 @@ var talents = [
       upgrade_information: "[Upgrade: +Fuel Efficiency]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Fuel", base: 100, perRank: 0 },
         { label: "Fuel Drain", base: 22, perRank: -3, suffix: "/s" },
       ],
-      tuning: [],
+      tuning: [
+        { macro: "JETPACK_FUEL_DRAIN", expr: "25 - {r} * 3" },
+      ],
     },
     {
       id: "lifesteal_ammo",
       name: "Lifesteal Ammo",
       icon: "('<tx0C0000000004F73D>')",
-      keybind: '"[[LEFTCLICK] or [RIGHTCLICK]]"',
-      description: "A percentage of the damage you deal with primary fire or secondary fire will heal you.",
+      keybind: '"[[LEFTCLICK]]"',
+      description: "A percentage of the damage you deal with primary fire will heal you.",
       cooldown: 0,
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Lifesteal", base: 15, perRank: 3.75, suffix: "%" },
       ],
       tuning: [
         { macro: "LIFESTEAL_HEAL", expr: "eventDamage * (11.25 + {r} * 3.75) / 100" },
-        { macro: "LIFESTEAL_RAILGUN_HEAL", expr: "eventPlayer.railgun_damage_dealt * (11.25 + {r} * 3.75) / 100" },
       ],
     },
     {
@@ -307,7 +356,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Healing Per Second", base: 5, perRank: 1.25, decimals: 2 },
@@ -327,7 +376,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: "alchemist",
+      unlocks: ["alchemist"],
       locks: [],
       stats: [
         { label: "Healing Per Potion", base: 200/3, perRank: 50/3 },
@@ -340,23 +389,25 @@ var talents = [
       ],
     },
     {
-      id: "ignite",
-      name: "Ignite",
+      id: "explosive_ammo",
+      name: "Explosive Ammo",
       icon: "('<tx0C00000000070EAE>')",
-      keybind: '"[[RIGHTCLICK]]"',
-      description: "Secondary fire deals additional fire damage over time.",
+      keybind: '"[Passive]"',
+      description: "Every reload slips a random handful of explosive rounds into the mix, each detonating on impact for bonus damage.",
       cooldown: 0,
-      upgrade_information: "[Upgrade: +Damage]",
+      upgrade_information: "[Upgrade: +Frequency]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
-        { label: "Fire Damage", base: 40, perRank: 10 },
-        { label: "Duration", base: 3, perRank: 0, suffix: "s" },
+        { label: "Explosive Rounds / Mag", base: 0, perRank: 1, maxBase: 8, maxPerRank: 1 },
+        { label: "Damage", base: 16, perRank: 0 },
       ],
       tuning: [
-        { macro: "IGNITE_DAMAGE_PER_SECOND", expr: "(30 + {r} * 10) / 3", context: "attacker" },
+        { macro: "EXPLOSIVE_AMMO_MAG_SIZE", expr: "30" },
+        { macro: "EXPLOSIVE_AMMO_COUNT", expr: "3 + {r} + random.randint(-4, 4)" },
+        { macro: "EXPLOSIVE_AMMO_DAMAGE", expr: "16" },
       ],
     },
     {
@@ -364,36 +415,43 @@ var talents = [
       name: "Overclock",
       icon: "('<tx0C0000000004F73C>')",
       keybind: '"[Passive]"',
-      description: "Reduces the cooldown of Railgun.",
+      description: "Reduces the cooldown, increases the charge speed, and makes Railgun chain to nearby enemies on hit.",
       cooldown: 0,
-      upgrade_information: "[Upgrade: -Cooldown]",
+      upgrade_information: "[Upgrade: +Chain Damage, +Chain Range, -Cooldown, +Charge Speed]",
       cd_reduction_per_rank: 0,
       requires_any_of: ["railgun"],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
-        { label: "Cooldown Reduction", base: 1, perRank: 1, suffix: "s" },
+        { label: "Chain Damage", base: 50, perRank: 12.5, decimals: 1 },
+        { label: "Chain Range", base: 5, perRank: 1.25, decimals: 2 },
+        { label: "Cooldown Reduction", base: 0.6, perRank: 0.6, suffix: "s", decimals: 1 },
+        { label: "Charge Speed", base: 120, perRank: 20, suffix: "%" },
       ],
-      tuning: [],
+      tuning: [
+        { macro: "OVERCLOCK_CHAIN_DISTANCE", expr: "3.75 + {r} * 1.25" },
+        { macro: "OVERCLOCK_CHAIN_DAMAGE", expr: "56.25 + {r} * 18.75 if eventWasCriticalHit else 37.5 + {r} * 12.5", context: "attacker" },
+      ],
     },
     {
       id: "shadowstep",
+      sweep_cooldown: true,
       name: "Shadowstep",
       icon: "('<tx0C0000000007550C>')",
       keybind: '"[Double Tap: [SPACEBAR]]"',
-      description: "Dash in any direction, and briefly become invisible and invulnerable. XP Orbs will reset the cooldown.",
-      cooldown: 22.5,
+      description: "Dash in any direction, and briefly become invisible and invulnerable. XP Orbs reduce the cooldown.",
+      cooldown: 24,
       upgrade_information: "[Upgrade: -Cooldown]",
-      cd_reduction_per_rank: 2.5,
+      cd_reduction_per_rank: 2,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Duration", base: 0.5, perRank: 0, suffix: "s", decimals: 1 },
-        { label: "Cooldown", base: 20, perRank: -2.5, suffix: "s", decimals: 1 },
+        { label: "Cooldown", base: 22, perRank: -2, suffix: "s", decimals: 1 },
       ],
       tuning: [
-        { macro: "SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK", expr: "2.5" },
+        { macro: "SHADOWSTEP_COOLDOWN_REDUCTION_PER_RANK", expr: "2" },
       ],
     },
     {
@@ -406,7 +464,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Damage Per Second", base: 12, perRank: 3 },
@@ -423,6 +481,7 @@ var talents = [
     },
     {
       id: "berserker",
+      sweep_cooldown: true,
       name: "Berserker",
       icon: "iconString(Icon.SKULL)",
       keybind: '"[[Q]]"',
@@ -431,7 +490,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Duration]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: ["immunity"],
       stats: [
         { label: "Duration", base: 5, perRank: 1.25, suffix: "s", decimals: 1 },
@@ -441,32 +500,36 @@ var talents = [
       tuning: [
         { macro: "BERSERKER_DURATION", expr: "3.75 + {r} * 1.25" },
         { macro: "BERSERKER_DURATION_LOCAL", expr: "3.75 + {r} * 1.25", context: "localPlayer" },
+        { macro: "BERSERKER_DAMAGE_DEALT", expr: "1.25" },
+        { macro: "BERSERKER_DAMAGE_RECEIVED", expr: "1.10" },
       ],
     },
     {
       id: "fireball",
+      sweep_cooldown: true,
       name: "Fireball",
       icon: "iconString(Icon.FIRE)",
-      keybind: '"[[F]]"',
-      description: "Install a weapon attachment that will let you launch fireballs.",
-      cooldown: 20,
+      keybind: '"[[RIGHTCLICK]]"',
+      description: "Secondary Fire: Launch a slow-moving fireball that explodes in a large area, burning enemies over time.",
+      cooldown: 12,
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: "pyromaniac",
-      locks: ["grim_reaper"],
+      unlocks: ["pyromaniac"],
+      locks: ["helix", "railgun"],
       stats: [
-        { label: "Instant Damage", base: 40, perRank: 10 },
-        { label: "Damage Over Time", base: 40, perRank: 10 },
+        { label: "Instant Damage", base: 67.5, perRank: 16.875 },
+        { label: "Damage Over Time", base: 67.5, perRank: 16.875 },
         { label: "DoT Duration", base: 5, perRank: 0, suffix: "s" },
-        { label: "Cooldown", base: 20, perRank: 0, suffix: "s" },
+        { label: "Self-Damage", base: 33.333, perRank: 0, suffix: "%", decimals: 1 },
+        { label: "Cooldown", base: 12, perRank: 0, suffix: "s" },
       ],
       tuning: [
-        { macro: "FIREBALL_DAMAGE", expr: "30 + {r} * 10" },
-        { macro: "FIREBALL_DAMAGE_SELF", expr: "12.5 + {r} * 4.166" },
+        { macro: "FIREBALL_DAMAGE", expr: "50.625 + {r} * 16.875" },
+        { macro: "FIREBALL_DAMAGE_SELF", expr: "16.875 + {r} * 5.625" },
         { macro: "FIREBALL_DAMAGE_SELF_OVER_TIME_DURATION", expr: "5" },
-        { macro: "FIREBALL_DAMAGE_SELF_OVER_TIME", expr: "2.5 + {r} * 0.833" },
-        { macro: "FIREBALL_DAMAGE_OVER_TIME", expr: "6 + {r} * 2" },
+        { macro: "FIREBALL_DAMAGE_SELF_OVER_TIME", expr: "3.375 + {r} * 1.125" },
+        { macro: "FIREBALL_DAMAGE_OVER_TIME", expr: "10.125 + {r} * 3.375" },
         { macro: "FIREBALL_DAMAGE_OVER_TIME_DURATION", expr: "5" },
         { macro: "FIREBALL_SPEED", expr: "15" },
         { macro: "FIREBALL_EXPLOSION_RADIUS", expr: "4" },
@@ -482,18 +545,19 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage Resistance]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
-        { label: "Damage Resistance", base: 40, perRank: 6.666, suffix: "%" },
+        { label: "Damage Resistance", base: 30, perRank: 7.5, suffix: "%" },
       ],
       tuning: [
-        { macro: "IGNORE_PAIN_DAMAGE_RESISTANCE", expr: "{r} * 6.666 + 33.333" },
-        { macro: "IGNORE_PAIN_DAMAGE_RECEIVED", expr: "66.666 - {r} * 6.666" },
+        { macro: "IGNORE_PAIN_DAMAGE_RESISTANCE", expr: "{r} * 7.5 + 22.5" },
+        { macro: "IGNORE_PAIN_DAMAGE_RECEIVED", expr: "77.5 - {r} * 7.5" },
       ],
     },
     {
       id: "javelin",
+      disabled: true,
       name: "Javelin",
       icon: "iconString(Icon.ARROW_RIGHT)",
       keybind: '"[Passive]"',
@@ -502,13 +566,14 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [],
       tuning: [],
     },
     {
       id: "bandage",
+      sweep_cooldown: true,
       name: "Bandage",
       icon: "abilityIconString(Hero.KIRIKO, Button.PRIMARY_FIRE)",
       keybind: '"[Double Tap: [MELEE]]"',
@@ -517,7 +582,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Total Healing", base: 200, perRank: 50 },
@@ -539,21 +604,22 @@ var talents = [
       upgrade_information: "[Upgrade: +Healing]",
       cd_reduction_per_rank: 0,
       requires_any_of: ["fireball"],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
-        { label: "Instant Healing", base: 40, perRank: 10 },
-        { label: "Healing Over Time", base: 40, perRank: 10 },
+        { label: "Instant Healing", base: 45, perRank: 11.25 },
+        { label: "Healing Over Time", base: 45, perRank: 11.25 },
         { label: "HoT Duration", base: 5, perRank: 0, suffix: "s" },
       ],
       tuning: [
-        { macro: "PYROMANIAC_INSTANT_HEALING", expr: "min(30 + {r} * 10, eventPlayer.getMaxHealthOfType(Health.NORMAL) - eventPlayer.getHealthOfType(Health.NORMAL))" },
-        { macro: "PYROMANIAC_HEALING_OVER_TIME", expr: "6 + {r} * 2" },
+        { macro: "PYROMANIAC_INSTANT_HEALING", expr: "min(33.75 + {r} * 11.25, eventPlayer.getMaxHealthOfType(Health.NORMAL) - eventPlayer.getHealthOfType(Health.NORMAL))" },
+        { macro: "PYROMANIAC_HEALING_OVER_TIME", expr: "6.75 + {r} * 2.25" },
         { macro: "PYROMANIAC_HEALING_DURATION", expr: "5" },
       ],
     },
     {
       id: "poison_vials",
+      disabled: true,
       name: "Poison Vials",
       icon: "iconString(Icon.POISON_2)",
       keybind: '"[[E]]"',
@@ -562,7 +628,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: "alchemist",
+      unlocks: ["alchemist"],
       locks: ["health_potions"],
       stats: [],
       tuning: [
@@ -582,7 +648,7 @@ var talents = [
       upgrade_information: "[Upgrade: -Cooldown, +Chance]",
       cd_reduction_per_rank: 1,
       requires_any_of: ["health_potions", "poison_vials"],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Extra Potion Chance", base: 33, perRank: 8.25, suffix: "%" },
@@ -603,7 +669,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Helix Rocket Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: ["gunslinger", "railgun"],
       stats: [],
       tuning: [],
@@ -614,21 +680,45 @@ var talents = [
       name: "Gigachad",
       icon: "('<tx0C00000000004121>')",
       keybind: '"[Passive]"',
-      description: "Gain a massive health boost, but as a side effect become slower and increase in size. Warning: May affect vocal chords.",
+      description: "Going to the gym and eating a lot of Winston's Peanut Butter comes with certain benefits... and downsides",
       cooldown: 0,
-      upgrade_information: "[Upgrade: +Health, +Headshot Healing, +Size]",
+      upgrade_information: "[Upgrade: +Health, +Headshot Heal-Back, +Size]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: [],
       stats: [
         { label: "Health", base: 600, perRank: 100 },
+        { label: "Crit Bonus Damage Healed", base: 40, perRank: 10, suffix: "%" },
         { label: "Move Speed", base: 95, perRank: -5, suffix: "%" },
         { label: "Size", base: 107, perRank: 7, suffix: "%" },
       ],
       tuning: [
         { macro: "GIGACHAD_SCALED_SIZE", expr: "1 + {r} * 0.07" },
         { macro: "GIGACHAD_MOVE_SPEED", expr: "100 - {r} * 5" },
+        { macro: "GIGACHAD_HEADSHOT_HEAL", expr: "0.15 + {r} * 0.05", context: "victim" },
+        { macro: "GIGACHAD_HEADSHOT_HEAL_RAILGUN", expr: "(0.30 + {r} * 0.10) / 3", context: "victim" },
+      ],
+    },
+    {
+      id: "helix",
+      sweep_cooldown: true,
+      name: "Helix Rockets",
+      icon: "abilityIconString(Hero.SOLDIER, Button.SECONDARY_FIRE)",
+      keybind: '"[[RIGHTCLICK]]"',
+      description: "Secondary Fire: Launch a volley of explosive rockets",
+      cooldown: 13.5,
+      upgrade_information: "[Upgrade: -Cooldown]",
+      cd_reduction_per_rank: 1.5,
+      requires_any_of: [],
+      unlocks: ["cryogenics"],
+      locks: ["railgun", "fireball"],
+      stats: [
+        { label: "Cooldown", base: 12, perRank: -1.5, suffix: "s", decimals: 1 },
+        { label: "Damage", base: 120, perRank: 0 },
+      ],
+      tuning: [
+        { macro: "HELIX_COOLDOWN", expr: "13.5 - {r} * 1.5" },
       ],
     },
     /*
@@ -642,7 +732,7 @@ var talents = [
       upgrade_information: "[Upgrade: +Primary Fire Damage]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: ["bombardment"],
       stats: [],
       tuning: [],
@@ -657,7 +747,7 @@ var talents = [
       upgrade_information: "[Upgrade: -Damage Required, +Decay Duration]",
       cd_reduction_per_rank: 0,
       requires_any_of: [],
-      unlocks: null,
+      unlocks: [],
       locks: ["ignore_pain"],
       stats: [],
       tuning: [],
@@ -731,7 +821,7 @@ var wrapText = (text, width) => {
 
 //--- Shared availability builder: the display rows (Unlocks/Locks) and the .format() arg expressions, or null when the talent has neither ---
 var availabilityRows = (talent) => {
-    var hasUnlock = !!talent.unlocks
+    var hasUnlock = talent.unlocks.length > 0
     var hasLock = talent.locks.length > 0
     if (!hasUnlock && !hasLock) {
         return null
@@ -739,8 +829,12 @@ var availabilityRows = (talent) => {
     var args = []
     var rows = []
     if (hasUnlock) {
-        rows.push("Unlocks: {" + args.length + "}")
-        args.push("talent_names[Talent." + talent.unlocks.toUpperCase() + "]")
+        var unlockPlaceholders = talent.unlocks.map(unlock => {
+            var placeholder = "{" + args.length + "}"
+            args.push("talent_names[Talent." + unlock.toUpperCase() + "]")
+            return placeholder
+        })
+        rows.push("Unlocks: " + unlockPlaceholders.join(", "))
     }
     if (hasLock) {
         var placeholders = talent.locks.map(lock => {
@@ -785,10 +879,16 @@ var talentNameById = (id) => {
 }
 var availLongest = (talent) => {
     var max = 0
-    if (talent.unlocks) {
-        var unlockName = talentNameById(talent.unlocks)
-        var unlockLen = "Unlocks: ".length + ICON_APPROX_W + (" [" + unlockName + "]").length
-        if (unlockLen > max) max = unlockLen
+    if (talent.unlocks.length > 0) {
+        var unlocksLen = "Unlocks: ".length
+        talent.unlocks.forEach((id, idx) => {
+            var unlockName = talentNameById(id)
+            unlocksLen += ICON_APPROX_W + (" [" + unlockName + "]").length
+            if (idx < talent.unlocks.length - 1) {
+                unlocksLen += 2
+            }
+        })
+        if (unlocksLen > max) max = unlocksLen
     }
     if (talent.locks.length > 0) {
         var locksLen = "Locks: ".length
@@ -825,9 +925,11 @@ var infoBgRows = (talent) => {
     return rows.join("\n")
 }
 
-var result = ""
+var result = "enum Talent:\n" + talents.map(t => "    " + t.id.toUpperCase()).join(",\n") + "\n\n"
 result += "globalvar talent_base_cooldowns = [" + talents.map(t => t.cooldown) + "]\n"
 result += "globalvar talent_cd_reduction_p_rank = [" + talents.map(t => t.cd_reduction_per_rank) + "]\n"
+result += "globalvar cooldown_talents = [" + talents.filter(t => t.sweep_cooldown).map(t => "Talent." + t.id.toUpperCase()).join(", ") + "]\n"
+result += "playervar talents_you_do_not_have = [" + talents.filter(t => t.requires_any_of.length === 0 && !t.disabled).map(t => "Talent." + t.id.toUpperCase()).join(", ") + "]\n"
 result += "globalvar talent_names = [" + talents.map(t => `"{} [${t.name}]".format(${t.icon})`) + "]\n"
 result += "globalvar talent_descriptions = [" + talents.map(t => JSON.stringify("\n".repeat(INFO_TEXT_PAD) + wrapText(t.description, WRAP_WIDTH))) + "]\n"
 result += "globalvar talent_info_bg = [" + talents.map(t => JSON.stringify(infoBgRows(t))) + "]\n"
@@ -841,7 +943,7 @@ result += "globalvar talent_availability = [" + talents.map(t => {
     }
     return JSON.stringify(availability.rows.join("\n")) + ".format(" + availability.args.join(", ") + ")"
 }).join(", ") + "]\n"
-result += "globalvar talent_has_availability = [" + talents.map(t => (t.unlocks || t.locks.length > 0) ? "true" : "false") + "]\n"
+result += "globalvar talent_has_availability = [" + talents.map(t => (t.unlocks.length > 0 || t.locks.length > 0) ? "true" : "false") + "]\n"
 result += "globalvar talent_requirements = [" + talents.map(t => "[" + t.requires_any_of.map(req => "Talent." + req.toUpperCase()) + "]") + "]\n"
 //--- talent_dependents[talent]: inverse of requires_any_of — the talents that require this one (drives the systemic removal-blocking check, shop.opy validate_talent_removal) ---
 result += "globalvar talent_dependents = [" + talents.map(t => "[" + talents.filter(other => other.requires_any_of.indexOf(t.id) !== -1).map(dependent => "Talent." + dependent.id.toUpperCase()).join(", ") + "]").join(", ") + "]\n"

@@ -1,10 +1,11 @@
 #!mainFile "soldier_x.opy"
 
-#--- Bot-only defineMember (variable[312-315]) ---
+#--- Bot-only defineMember (variable[312-316]) ---
 #!defineMember potion_earliest_expiry variable[312]
 #!defineMember bot_search_destination variable[313]
 #!defineMember bot_was_shot variable[314]
 #!defineMember bot_combat_awareness_start variable[315]
+#!defineMember bot_target_visible variable[316]
 
 # ============================================================
 # BOT SYSTEM v2 — Combat-only bots for Soldier X
@@ -166,7 +167,7 @@ def bot_state_machine():
 def bot_start_facing():
     @Name "BOT - - - [SUBROUTINE] Start Facing"
 
-    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT] / 2, 0) if eventPlayer.bot_state_id == BotState.COMBAT else vect(eventPlayer.bot_face_target.x, eventPlayer.getEyePosition().y if distance(eventPlayer.getPosition(), eventPlayer.bot_face_target) < 0.5 else eventPlayer.bot_face_target.y, eventPlayer.bot_face_target.z)), BOT_TURN_SPEED, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
+    eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getPosition() + vect(0, eventPlayer.bot_combat_target.stats[Stat.EYE_HEIGHT], 0) if eventPlayer.bot_state_id == BotState.COMBAT else vect(eventPlayer.bot_face_target.x, eventPlayer.getEyePosition().y if distance(eventPlayer.getPosition(), eventPlayer.bot_face_target) < 0.5 else eventPlayer.bot_face_target.y, eventPlayer.bot_face_target.z)), BOT_TURN_SPEED, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
 
 
 # ============================================================
@@ -240,7 +241,7 @@ def bot_sm_combat():
         or eventPlayer.bot_combat_target.is_using_ability[Talent.STEALTH] \
         or eventPlayer.isDead() \
         or distance(eventPlayer.getPosition(), eventPlayer.bot_combat_target.getPosition()) > BOT_DISENGAGE_RANGE \
-        or distance(raycast(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getEyePosition(), null, eventPlayer, false).getHitPosition(), eventPlayer.bot_combat_target.getEyePosition()) >= 1, \
+        or not eventPlayer.bot_target_visible, \
         99999)
 
     eventPlayer.stopForcingButton(Button.PRIMARY_FIRE)
@@ -274,7 +275,7 @@ def bot_sm_searching():
             and eventPlayer.bot_combat_target.hasSpawned() \
             and not eventPlayer.bot_combat_target.browsing_shop \
             and not eventPlayer.bot_combat_target.is_using_ability[Talent.STEALTH] \
-            and distance(raycast(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getEyePosition(), null, eventPlayer, false).getHitPosition(), eventPlayer.bot_combat_target.getEyePosition()) < 1) \
+            and eventPlayer.bot_target_visible) \
         or eventPlayer.bot_combat_target == null \
         or eventPlayer.bot_combat_target.isDead() \
         or eventPlayer.isDead() \
@@ -282,7 +283,7 @@ def bot_sm_searching():
         BOT_SEARCH_DURATION)
 
     #--- Check if target reacquired ---
-    if eventPlayer.bot_combat_target != null and not eventPlayer.bot_combat_target.isDead() and eventPlayer.bot_combat_target.hasSpawned() and not eventPlayer.bot_combat_target.browsing_shop and not eventPlayer.bot_combat_target.is_using_ability[Talent.STEALTH] and eventPlayer.isAlive() and distance(raycast(eventPlayer.getEyePosition(), eventPlayer.bot_combat_target.getEyePosition(), null, eventPlayer, false).getHitPosition(), eventPlayer.bot_combat_target.getEyePosition()) < 1:
+    if eventPlayer.bot_combat_target != null and not eventPlayer.bot_combat_target.isDead() and eventPlayer.bot_combat_target.hasSpawned() and not eventPlayer.bot_combat_target.browsing_shop and not eventPlayer.bot_combat_target.is_using_ability[Talent.STEALTH] and eventPlayer.isAlive() and eventPlayer.bot_target_visible:
         eventPlayer.bot_state_id = BotState.COMBAT
     else:
         eventPlayer.bot_combat_target = null
@@ -320,24 +321,18 @@ def bot_combat_scan():
                                 #--- 1 second of awareness — enter combat ---
                                 scan_bots[scan_index].bot_combat_target = scan_visible_players[0]
                                 scan_bots[scan_index].bot_combat_awareness_start = 0
+                                scan_bots[scan_index].bot_target_visible = true
                                 scan_bots[scan_index].bot_state_id = BotState.COMBAT
                         else:
                             scan_bots[scan_index].bot_combat_awareness_start = 0
                     else:
                         scan_bots[scan_index].bot_combat_awareness_start = 0
 
+                #--- Engaged bots: LoS upkeep ---
+                elif scan_bots[scan_index].bot_combat_target != null and (scan_bots[scan_index].bot_state_id == BotState.COMBAT or scan_bots[scan_index].bot_state_id == BotState.SEARCHING):
+                    scan_bots[scan_index].bot_target_visible = distance(raycast(scan_bots[scan_index].getEyePosition(), scan_bots[scan_index].bot_combat_target.getEyePosition(), null, scan_bots[scan_index], false).getHitPosition(), scan_bots[scan_index].bot_combat_target.getEyePosition()) < 1
+
                 wait(BOT_SCAN_INTERVAL / len(scan_bots))
         else:
             wait(BOT_SCAN_INTERVAL)
-
-
-
-rule "DEBUG - - - Re-enable Ability 2 for non-bots (testing Shadow Step as Reaper)":
-    @Event eachPlayer
-    @Condition not eventPlayer.isDummy()
-    @Hero reaper
-
-    wait(1)
-    eventPlayer.setAbility2Enabled(true)
-
 

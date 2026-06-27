@@ -1,38 +1,5 @@
 #!mainFile "soldier_x.opy"
 
-enum Talent:
-    BLOODTHIRST, #1
-    IMMUNITY, #2
-    CYBERNETICS, #3
-    SOUL_HARVEST, #4
-    POISONOUS_DAGGER, #5
-    STEALTH, #6
-    JUGGERNAUT, #7
-    DIVE_BOMB, #8
-    CRYOGENICS, #9
-    RAILGUN, #10
-    GRIM_REAPER, #11
-    JETPACK, #12
-    LIFESTEAL_AMMO, #13
-    HEALTH_REGEN, #14
-    HEALTH_POTIONS, #15
-    IGNITE, #16
-    OVERCLOCK, #17
-    SHADOWSTEP, #18
-    BURNING_SOUL, #19
-    BERSERKER, #20
-    FIREBALL, #21
-    IGNORE_PAIN, #22
-    JAVELIN, #23
-    BANDAGE, #24
-    PYROMANIAC, #25
-    POISON_VIALS, #26
-    ALCHEMIST, #27
-    #BOMBARDMENT, #28
-    GIGACHAD, #29
-    #GUNSLINGER, #30
-    #ADRENALINE_RUSH #31
-
 # ============================================================
 # GLOBAL VARIABLES
 # ============================================================
@@ -67,7 +34,7 @@ globalvar player_picking_up_orb
 #--- Bot system ---
 globalvar spawn_bots = createWorkshopSettingBool("01. Bots", "Spawn bots?", true, 0)
 globalvar amount_of_bots_and_players = createWorkshopSettingInt("01. Bots", "How many bots and players?", 8, 1, 8, 1)
-globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", true, 1)
+globalvar bots_friendly = createWorkshopSettingBool("01. Bots", "Friendly?", false, 1)
 
 #--- Shop system ---
 globalvar shop_location
@@ -82,6 +49,11 @@ globalvar max_experience_per_level = [250, 275, 303, 333, 366, 403, 443, 487, 53
 playervar talent_trigger_times
 playervar talent_on_cooldown
 playervar railgun_charge
+playervar railgun_chain_origin
+playervar railgun_chain_hit
+playervar railgun_chain_candidates
+playervar railgun_chain_beams
+playervar railgun_chain_damage
 
 globalvar current_time
 
@@ -95,6 +67,8 @@ globalvar debug_bot_damage_test = false
 globalvar debug_bot_damage_multi = false
 globalvar debug_bot_low_hp = false
 globalvar debug_disable_cooldown_huds = false
+globalvar debug_hack_self = false
+globalvar debug_hack_self_rank = 1
 #!define IS_PLAYER(p) ((not p.isDummy()) or (p.isDummy() and debug_bot_load_test))
 #!define SWEEP_WAIT(window, count) wait(max((window) / (count), 0.016))
 
@@ -161,7 +135,9 @@ playervar experience_current = 0
 playervar experience_max = 250
 /*playervar healing_done_in_combat*/
 playervar health_potion_cooldown_memory
-playervar in_combat = 0
+playervar in_combat = false
+playervar combat_last_hit_time
+macro COMBAT_DURATION = 3
 #playervar indexMemory
 playervar is_electrified = 0
 playervar is_using_ability = []
@@ -169,14 +145,13 @@ playervar juggernaut_charge
 playervar talents_offered_in_shop
 playervar player_name = "{0}".format(eventPlayer)
 playervar player_temp_effects
-playervar possible_talents = [Talent.IMMUNITY, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
+playervar possible_talents = []
 #playervar poison_vials_projPos
 #playervar poison_vials_projPosIn0032
 /*playervar replace_replacing_or_cancelled = [false, false, false]*/
 playervar skipped_a_talent
 playervar talent_counter_or_position_etc
 playervar talent_ranks = []
-playervar talents_you_do_not_have = [Talent.IMMUNITY, Talent.CYBERNETICS, Talent.SOUL_HARVEST, Talent.STEALTH, Talent.DIVE_BOMB, Talent.CRYOGENICS, Talent.RAILGUN, Talent.GRIM_REAPER, Talent.JETPACK, Talent.LIFESTEAL_AMMO, Talent.HEALTH_REGEN, Talent.HEALTH_POTIONS, Talent.IGNITE, Talent.SHADOWSTEP, Talent.BURNING_SOUL, Talent.BERSERKER, Talent.FIREBALL, Talent.IGNORE_PAIN, Talent.BANDAGE, /*Talent.POISON_VIALS, Talent.BOMBARDMENT,*/ Talent.GIGACHAD/*, Talent.GUNSLINGER, Talent.ADRENALINE_RUSH*/]
 playervar using_one_of_the_hearthstones
 playervar xp_boost_is_active
 #playervar xp_orb_destination
@@ -200,7 +175,7 @@ playervar adrenaline_rush_value = 100
 playervar current_immunity_target = 0
 playervar current_dive_bomb_target = 0
 
-#--- Multi-file defineMember (variable[0-42]) ---
+#--- Multi-file defineMember (variable[0-43]) ---
 #!defineMember is_using_hearthstone variable[0]
 #!defineMember is_using_skip_talent variable[1]
 #!defineMember is_using_vote_yes variable[2]
@@ -232,15 +207,18 @@ playervar current_dive_bomb_target = 0
 #!defineMember stealth_effect_id variable[29]
 #!defineMember stealth_sound_id variable[30]
 #!defineMember stealth_effect_id2 variable[31]
-#!defineMember stealth_stun_text_id variable[32]
+#!defineMember stealth_hack_text_id variable[32]
 #!defineMember current_stealth_target variable[33]
 #!defineMember railgun_charge_effect_id variable[34]
 #!defineMember victims_in_immunity_radius variable[35]
 #!defineMember victims_in_dive_bomb_radius variable[36]
-#!defineMember dive_bomb_damage_total variable[37]
+#!defineMember gigachad_damage_healed_back variable[37]
 #!defineMember bot_throttle_paused variable[38]
 #!defineMember railgun_damage_dealt variable[39]
 #!defineMember current_damage_received variable[40]
+#!defineMember is_hacked variable[41]
+#!defineMember hacked_until variable[42]
+#!defineMember hack_error_pending variable[43]
 
 #--- Damage numbers: recent damage dealt per victim (variable[408-414]) ---
 #!defineMember recent_damage_victims variable[408]
@@ -274,7 +252,6 @@ globalvar grim_reaper_sweep_index
 #!defineMember current_cooldown_talent global_variable[11]
 globalvar cooldown_sweep_index
 globalvar cooldown_sweep_talent_index
-globalvar cooldown_talents
 
 #Subroutine names
 subroutine buy_debug_talents
@@ -296,6 +273,7 @@ subroutine stopped_using_hearthstone
 subroutine using_one_of_the_hearthstones
 subroutine recalculate_player_speed
 subroutine recalculate_damage_received
+subroutine recalculate_secondary_fire
 subroutine restore_ability1
 subroutine which_players_have_grim_reaper
 subroutine detect_input_device
@@ -320,16 +298,15 @@ generateTalents()
 #--- Edit a talent's stats/tuning block there; see generateTalents() above. The macros below were NOT moved: ---
 
 #Unused cooldown macros (kept; talents.js cooldown/cd_reduction fields are the live source)
-macro SHADOWSTEP_BASE_COOLDOWN = 22.5
-macro STEALTH_BASE_COOLDOWN = 20
-macro STEALTH_COOLDOWN_REDUCTION_PER_RANK = 4
+macro SHADOWSTEP_BASE_COOLDOWN = 24
+macro STEALTH_BASE_COOLDOWN = 22.5
+macro STEALTH_COOLDOWN_REDUCTION_PER_RANK = 2.5
 macro GRIM_REAPER_COOLDOWN_REDUCTION_PER_RANK = 6
 macro HEALTH_POTIONS_COOLDOWN_REDUCTION_PER_RANK = 1
 macro FIREBALL_PROJECTILE_RADIUS = 1.75
 
 #Disabled/removed-talent tuning (kept commented for revival)
 #macro GUNSLINGER_ADDITIONAL_DAMAGE = round(eventDamage * 3.333 + eventDamage * attacker.talent_ranks[Talent.GUNSLINGER] * 0.166)
-#macro IGNITE_BOMBARDMENT_DAMAGE_PER_SECOND = round(9.97 + attacker.talent_ranks[Talent.IGNITE] * 0.028 * eventDamage / 2)
 #macro BOMBARDMENT_DAMAGE = attacker.talent_ranks[Talent.BOMBARDMENT] * 4
 #macro POISON_VIALS_DAMAGE = 28.125 + eventPlayer.talent_ranks[Talent.POISON_VIALS] * 9.375
 #macro POISON_VIALS_DAMAGE_OVER_TIME_DURATION = 5
@@ -341,7 +318,7 @@ macro FIREBALL_PROJECTILE_RADIUS = 1.75
 #macro ADRENALINE_RUSH_MAX_SPEED = 125 + (eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] - 1) * 6.25
 #macro ADRENALINE_RUSH_DECAY_RATE = 2.5
 
-macro IMMUNITY_EFFECTS_VISIBLE = eventPlayer.browsing_shop == false and not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success) and not eventPlayer.is_using_ability[Talent.STEALTH]
+macro IMMUNITY_EFFECTS_VISIBLE = eventPlayer.browsing_shop == false and not (eventPlayer.is_using_ability[Talent.GRIM_REAPER] and eventPlayer.casting_success) and not eventPlayer.is_using_ability[Talent.STEALTH] and not eventPlayer.is_using_ability[Talent.SHADOWSTEP]
 macro DAMAGE_NUMBER_WINDOW = 1.5
 macro DAMAGE_NUMBER_Y_NEAR = 2
 macro DAMAGE_NUMBER_Y_FAR = 3

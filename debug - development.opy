@@ -61,6 +61,8 @@ macro DEBUG_FLYCAM_BOOST_MULTIPLIER = 4     #speed multiplier while holding Abil
 #--- Workshop Settings (only active when this file is included) ---
 rule "DEBUG - - - Init Workshop Settings":
     debug_spectator_tools = createWorkshopSettingBool("00. Debug", "Debug tools", true, 0)
+    debug_hack_self = createWorkshopSettingBool("00. Debug", "Hacked: Press Interact to hack self", false, 1)
+    debug_hack_self_rank = createWorkshopSettingInt("00. Debug", "Hacked: Self Rank", 1, 1, 5, 2)
     debug_bot_load_test = createWorkshopSettingBool("00. Debug: Server Load", "Server load test", true, 0)
     debug_test_radius = createWorkshopSettingFloat("00. Debug: Server Load", "Formation Radius (Circle) | Distance Between bots (m)", 6, 1, 20, 1)
     debug_test_line = createWorkshopSettingBool("00. Debug: Server Load", "Formation: Circle (Off) | Line (On))", false, 2)
@@ -70,6 +72,17 @@ rule "DEBUG - - - Init Workshop Settings":
     debug_bot_low_hp = createWorkshopSettingBool("00. Debug: Server Load", "Bots: starts with 20% Health", false, 6)
     debug_disable_cooldown_huds = createWorkshopSettingBool("00. Debug: Server Load", "Disable talent cooldown HUDs", false, 7)
     debug_bot_damage_multi = createWorkshopSettingBool("00. Debug: Server Load", "Bots: random multi-victim (needs 'shoot each other')", false, 8)
+
+
+#--- Hacked tester: while the toggle is on, hold Interact to hack yourself for the chosen rank's duration (1.5 + rank*0.5 s) ---
+rule "DEBUG - - - Apply Hacked On Self (Interact)":
+    @Event eachPlayer
+    @Condition debug_hack_self == true
+    @Condition not eventPlayer.isDummy()
+    @Condition eventPlayer.isHoldingButton(Button.INTERACT) == true
+
+    eventPlayer.hacked_until = getTotalTimeElapsed() + 1.5 + debug_hack_self_rank * 0.5
+    eventPlayer.is_hacked = true
 
 
 #--- Element budget + server load readout (host, visible while playing) ---
@@ -89,8 +102,8 @@ rule "DEBUG - - - Real Server Load Average":
     @Condition debug_spectator_tools == true
 
     #--- Phase 1: Init (sample until all bots have respawned) ---
-    while getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players \
-        or len([p for p in getAllPlayers() if p.isDummy() and not p.reaper_has_respawned_once]) > 0:
+    while spawn_bots and (getNumberOfPlayers(Team.ALL) < amount_of_bots_and_players \
+        or len([p for p in getAllPlayers() if p.isDummy() and not p.reaper_has_respawned_once]) > 0):
         debug_srv_load_sample_count += 1
         debug_srv_load_sum += getServerLoad()
         debug_srv_load_avg_init = round(debug_srv_load_sum / debug_srv_load_sample_count)
@@ -161,7 +174,7 @@ rule "DEBUG - - - Load-Test Damage Ring":
             debug_test_soldier_bots[debug_test_init_counter].debug_test_damage_target = debug_test_soldier_bots[(debug_test_init_counter + 1) % len(debug_test_soldier_bots)]
         wait(1)
 
-
+/*
 rule "DEBUG - - - Load-Test Bot Facing":
     @Event eachPlayer
     @Hero soldier
@@ -169,7 +182,7 @@ rule "DEBUG - - - Load-Test Bot Facing":
     @Condition eventPlayer.isDummy() == true
 
     eventPlayer.startFacing(directionTowards(eventPlayer.getEyePosition(), eventPlayer.debug_test_damage_target.getPosition() + Vector.UP) if (debug_bot_damage_test and eventPlayer.debug_test_damage_target != null) else (DEBUG_TEST_LINE_DIRECTION if debug_test_line else (directionTowards(eventPlayer.getEyePosition(), vect(DEBUG_TEST_CENTER.x, eventPlayer.getEyePosition().y, DEBUG_TEST_CENTER.z)) + (Vector.UP if eventPlayer.talent_ranks[Talent.FIREBALL] > 0 else vect(0, 0, 0)))), 200, Relativity.TO_WORLD, FacingReeval.DIRECTION_AND_TURN_RATE)
-
+*/
 
 rule "DEBUG - - - Load-Test Host Init":
     @Event eachPlayer
@@ -200,7 +213,7 @@ rule "DEBUG - - - Load-Test Bot Input: Stealth (force-hold Crouch)":
     @Condition eventPlayer.talent_ranks[Talent.STEALTH] > 0
 
     eventPlayer.startForcingButton(Button.CROUCH)
-
+/*
 rule "DEBUG - - - Load-Test Bot Input: Fireball (force-cast Interact; aims 45° up via the Facing rule)":
     @Event eachPlayer
     @Hero soldier
@@ -209,7 +222,7 @@ rule "DEBUG - - - Load-Test Bot Input: Fireball (force-cast Interact; aims 45° 
     @Condition eventPlayer.talent_ranks[Talent.FIREBALL] > 0
 
     eventPlayer.startForcingButton(Button.INTERACT)
-
+*/
 rule "DEBUG - - - Load-Test Bot Input: Damage (fixed-rate damage pulse to assigned target)":
     @Event eachPlayer
     @Hero soldier
@@ -314,8 +327,6 @@ rule "DEBUG - - - Host HUD Texts [DEFAULT: OFF]":
     @Condition hostPlayer == eventPlayer
     @Condition eventPlayer.player_name == "Psyrius"
 
-    hudText(hostPlayer, null, null, ("DPS:"), HudPosition.RIGHT, 106, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
-
     hudText(hostPlayer, "Lifesteal Ammo:", "In Combat Avg: {0} {1}".format("[Rank 1: {0}] [Rank 2: {1}] [Rank 3: {2}]".format(lifesteal_total_healing[1] / lifesteal_time_in_combat[1], lifesteal_total_healing[2] / lifesteal_time_in_combat[2], lifesteal_total_healing[3] / lifesteal_time_in_combat[3]), "[Rank 4: {0}] [Rank 5: {1}]".format(lifesteal_total_healing[4] / lifesteal_time_in_combat[4], lifesteal_total_healing[5] / lifesteal_time_in_combat[5])), null, HudPosition.LEFT, 100, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     hudText(hostPlayer, "Health Regen:", "In Combat Avg: {0} {1}".format("[Rank 1: {0}] [Rank 2: {1}] [Rank 3: {2}]".format(health_regen_total_healing[1] / health_regen_time_in_combat[1], health_regen_total_healing[2] / health_regen_time_in_combat[2], health_regen_total_healing[3] / health_regen_time_in_combat[3]), "[Rank 4: {0}] [Rank 5: {1}]".format(health_regen_total_healing[4] / health_regen_time_in_combat[4], health_regen_total_healing[5] / health_regen_time_in_combat[5])), null, HudPosition.LEFT, 101, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
     hudText(hostPlayer, "Health Potions:", "In Combat Avg: {0} {1}".format("[Rank 1: {0}] [Rank 2: {1}] [Rank 3: {2}]".format(health_potions_total_healing[1] / health_potions_time_in_combat[1], health_potions_total_healing[2] / health_potions_time_in_combat[2], health_potions_total_healing[3] / health_potions_time_in_combat[3]), "[Rank 4: {0}] [Rank 5: {1}]".format(health_potions_total_healing[4] / health_potions_time_in_combat[4], health_potions_total_healing[5] / health_potions_time_in_combat[5])), null, HudPosition.LEFT, 102, Color.WHITE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
@@ -371,14 +382,12 @@ rule "DEBUG - - - Activate Slow Motion With Melee & Cancel Slow Motion With Inte
     
 
 
-/*
 rule "DEBUG - - - Create Dummy Bot With Crouch + Primary Fire [DEFAULT: OFF]":
     @Event eachPlayer
     @Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE) == true
     @Condition eventPlayer.isHoldingButton(Button.CROUCH) == true
-    
+
     createDummy(Hero.REAPER, Team.ALL, -1 * 1 * 1 * 1, raycast(eventPlayer.getEyePosition(), eventPlayer.getEyePosition() + eventPlayer.getFacingDirection() * 200, getAllPlayers(), eventPlayer, true).getHitPosition(), vect(0, 0, 0))
-*/
 
 /*
 rule "DEBUG - - - Restart Match With Primary Fire + Secondary Fire + Jump + Crouch [DEFAULT: OFF]":

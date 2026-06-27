@@ -1,7 +1,6 @@
 #!mainFile "soldier_x.opy"
 
-#--- XP-only defineMember (variable[500]) ---
-#!defineMember xp_received_message variable[500]
+globalvar xp_received_message
 
 subroutine activate_xp_boost
 
@@ -39,8 +38,8 @@ rule "XP SYSTEM - - - XP Orbs":
 
                 if player_picking_up_orb.experience_current < player_picking_up_orb.experience_max:
 
-                    player_picking_up_orb.xp_received_message = xp_orbs[xp_orbs_current_index][Orb.XP_AMOUNT]
-                    smallMessage(player_picking_up_orb, "{0} +{1} XP!".format('<TXC0000000004C5D2>', player_picking_up_orb.xp_received_message))
+                    xp_received_message = xp_orbs[xp_orbs_current_index][Orb.XP_AMOUNT]
+                    smallMessage(player_picking_up_orb, "{0} +{1} XP!".format('<TXC0000000004C5D2>', xp_received_message))
 
                     player_picking_up_orb.experience_current += xp_orbs[xp_orbs_current_index][Orb.XP_AMOUNT] * player_picking_up_orb.stats[Stat.XP]
 
@@ -64,26 +63,36 @@ rule "XP SYSTEM - - - XP Orbs":
                     playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_MINEFIELD_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
 
                 if player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] > 0 and player_picking_up_orb.amount_of_health_potions < 3 and ALCHEMIST_PROC_CHANCE >= 66:
-                    if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0:
-                        player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS]
-                        player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.HEALTH_POTIONS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
-                    #elif player_picking_up_orb.talent_ranks[Talent.POISON_VIALS] > 0:
-                        #player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS]
-                        #player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.POISON_VIALS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
-                    wait()
-                    smallMessage(player_picking_up_orb, "{0} +1 {1}".format(iconString(Icon.RADIOACTIVE), "Health Potion!" if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0 else "Poison Vial!"))
+                    if player_picking_up_orb.is_hacked == true:
+                        player_picking_up_orb.hack_error_pending = true
+                    else:
+                        if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0:
+                            player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS]
+                            player_picking_up_orb.talent_trigger_times[Talent.HEALTH_POTIONS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.HEALTH_POTIONS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
+                        #elif player_picking_up_orb.talent_ranks[Talent.POISON_VIALS] > 0:
+                            #player_picking_up_orb.health_potion_cooldown_memory = getTotalTimeElapsed() - player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS]
+                            #player_picking_up_orb.talent_trigger_times[Talent.POISON_VIALS] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.POISON_VIALS] - player_picking_up_orb.talent_ranks[Talent.ALCHEMIST]
+                        wait()
+                        smallMessage(player_picking_up_orb, "{0} +1 {1}".format(iconString(Icon.RADIOACTIVE), "Health Potion!" if player_picking_up_orb.talent_ranks[Talent.HEALTH_POTIONS] > 0 else "Poison Vial!"))
 
                 if player_picking_up_orb.talent_ranks[Talent.SOUL_HARVEST] > 0:
-                    heal(player_picking_up_orb, player_picking_up_orb, SOUL_HARVEST_HEALING)
-                    playEffect(getAllPlayers(), DynamicEffect.BRIGITTE_REPAIR_PACK_IMPACT_SOUND, Color.WHITE, player_picking_up_orb.getPosition(), 100)
+                    if player_picking_up_orb.is_hacked == true:
+                        player_picking_up_orb.hack_error_pending = true
+                    else:
+                        heal(player_picking_up_orb, player_picking_up_orb, SOUL_HARVEST_HEALING)
+                        playEffect(getAllPlayers(), DynamicEffect.BRIGITTE_REPAIR_PACK_IMPACT_SOUND, Color.WHITE, player_picking_up_orb.getPosition(), 100)
                     
                 if player_picking_up_orb.talent_ranks[Talent.SHADOWSTEP] > 0:
-                    player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = getTotalTimeElapsed() - talent_base_cooldowns[Talent.SHADOWSTEP]
+                    if player_picking_up_orb.is_hacked == true:
+                        player_picking_up_orb.hack_error_pending = true
+                    else:
+                        player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] - player_picking_up_orb.talent_ranks[Talent.SHADOWSTEP] * 2
                 
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
                 del xp_orbs[xp_orbs_current_index]
                 if RULE_CONDITION:
+                    wait()
                     goto RULE_START
             
             elif xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] < getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
@@ -125,4 +134,3 @@ rule "XP SYSTEM - - - Earned Elimination":
         eventPlayer.experience_current += victim.experience_max * 0.075 * eventPlayer.stats[Stat.XP]
     #if eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] > 0 and attacker != victim:
         #eventPlayer.adrenaline_rush_value = ADRENALINE_RUSH_MAX_SPEED
-        

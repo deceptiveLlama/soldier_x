@@ -43,7 +43,7 @@ settings {
                 "enableUlt": false
             },
             "soldier": {
-                "secondaryFireCooldown%": 100,
+                "secondaryFireCooldown%": 200,
                 "combatUltGen%": 0,
                 "passiveUltGen%": 0,
                 "ultGen%": 10

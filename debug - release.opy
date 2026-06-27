@@ -17,7 +17,7 @@ globalvar debug_gigachad = createWorkshopSettingInt("03. Talents (Use at your ow
 #globalvar debug_gunslinger = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Gunslinger", 0, 0, 5, 0)
 globalvar debug_health_potions = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Health Potions", 0, 0, 5, 0)
 globalvar debug_health_regen = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Health Regen", 0, 0, 5, 0)
-globalvar debug_ignite = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Ignite", 0, 0, 5, 0)
+globalvar debug_explosive_ammo = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Explosive Ammo", 0, 0, 5, 0)
 globalvar debug_ignore_pain = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Ignore Pain", 0, 0, 5, 0)
 globalvar debug_jetpack = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Jetpack", 0, 0, 5, 0)
 #globalvar debug_juggernaut = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Juggernaut", 0, 0, 5, 0)
@@ -28,6 +28,7 @@ globalvar debug_grim_reaper = createWorkshopSettingInt("03. Talents (Use at your
 globalvar debug_immunity = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Immunity", 0, 0, 5, 0)
 globalvar debug_pyromaniac = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Pyromaniac", 0, 0, 5, 0)
 globalvar debug_railgun = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Railgun", 0, 0, 5, 0)
+globalvar debug_helix = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Helix Rockets", 0, 0, 5, 0)
 #globalvar debug_adrenaline_rush = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Adrenaline Rush", 0, 0, 5, 0)
 globalvar debug_stealth = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Stealth", 0, 0, 5, 0)
 globalvar debug_shadowstep = createWorkshopSettingInt("03. Talents (Use at your own risk)", "Shadowstep", 0, 0, 5, 0)
@@ -77,6 +78,12 @@ def buy_debug_talents():
         buy_railgun()
         eventPlayer.talent_ranks[Talent.RAILGUN] = debug_railgun
         eventPlayer.amount_of_talents_purchased += debug_railgun
+    if debug_helix > 0:
+        eventPlayer.talent_ranks[Talent.HELIX] = 1
+        eventPlayer.bought_talents.append(Talent.HELIX)
+        buy_helix()
+        eventPlayer.talent_ranks[Talent.HELIX] = debug_helix
+        eventPlayer.amount_of_talents_purchased += debug_helix
     if debug_lifesteal_ammo > 0:
         eventPlayer.talent_ranks[Talent.LIFESTEAL_AMMO] = 1
         eventPlayer.bought_talents.append(Talent.LIFESTEAL_AMMO)
@@ -89,12 +96,12 @@ def buy_debug_talents():
         buy_cryogenics()
         eventPlayer.talent_ranks[Talent.CRYOGENICS] = debug_cryogenics
         eventPlayer.amount_of_talents_purchased += debug_cryogenics
-    if debug_ignite > 0:
-        eventPlayer.talent_ranks[Talent.IGNITE] = 1
-        eventPlayer.bought_talents.append(Talent.IGNITE)
-        buy_ignite()
-        eventPlayer.talent_ranks[Talent.IGNITE] = debug_ignite
-        eventPlayer.amount_of_talents_purchased += debug_ignite
+    if debug_explosive_ammo > 0:
+        eventPlayer.talent_ranks[Talent.EXPLOSIVE_AMMO] = 1
+        eventPlayer.bought_talents.append(Talent.EXPLOSIVE_AMMO)
+        buy_explosive_ammo()
+        eventPlayer.talent_ranks[Talent.EXPLOSIVE_AMMO] = debug_explosive_ammo
+        eventPlayer.amount_of_talents_purchased += debug_explosive_ammo
     if debug_overclock > 0:
         eventPlayer.talent_ranks[Talent.OVERCLOCK] = 1
         eventPlayer.bought_talents.append(Talent.OVERCLOCK)
