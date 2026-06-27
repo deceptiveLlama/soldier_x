@@ -45,6 +45,8 @@ playervar selected_talent_position = shop_talent_positions[1]
 playervar selected_talent_will_replace
 playervar using_hearthstone_timer = 0
 playervar burning_soul_orb_timer
+playervar burning_soul_orb_volume
+playervar burning_soul_orb_drop_position
 
 #Subroutine names
 

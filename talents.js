@@ -91,7 +91,7 @@ var talents = [
       name: "Immunity",
       icon: "('<tx0C00000000004120>')",
       keybind: '"[[Q]]"',
-      description: "Activate to gain immunity, exit combat and increase healing received. Can't use damage abilities while immune.",
+      description: "Activate to gain immunity, exit combat and increase healing received. You can't perform offensive actions while immune.",
       cooldown: 45,
       upgrade_information: "[Upgrade: +Duration, +Healing Received]",
       cd_reduction_per_rank: 0,

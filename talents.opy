@@ -120,7 +120,6 @@ rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     wait()
     eventPlayer.disallowButton(Button.PRIMARY_FIRE)
     eventPlayer.setPrimaryFireEnabled(false)
-    eventPlayer.disallowButton(Button.SECONDARY_FIRE)
     eventPlayer.setSecondaryFireEnabled(false)
     eventPlayer.setMeleeEnabled(false)
     recalculate_damage_received()
@@ -158,7 +157,6 @@ rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     destroyEffect(eventPlayer.player_temp_effects[51])
     #if eventPlayer.talent_ranks[Talent.GUNSLINGER] == 0:
     eventPlayer.allowButton(Button.PRIMARY_FIRE)
-    eventPlayer.allowButton(Button.SECONDARY_FIRE)
     #if eventPlayer.talent_ranks[Talent.SPRINTER] > 0 and eventPlayer.isUsingAbility1() or eventPlayer.is_using_ability[Talent.BANDAGE]:
     #        goto lbl_0
     #eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
@@ -171,7 +169,8 @@ rule "TALENT SYSTEM - - - [TALENT 1: IMMUNITY] Use Immunity":
     recalculate_damage_received()
     recalculate_player_speed()
     waitUntil(eventPlayer.browsing_shop == false, 99999)
-    eventPlayer.setPrimaryFireEnabled(true)
+    if not eventPlayer.is_charging_railgun:
+        eventPlayer.setPrimaryFireEnabled(true)
     recalculate_secondary_fire()
     eventPlayer.setMeleeEnabled(true)
     
@@ -710,7 +709,6 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Charge Railgun":
     @Condition eventPlayer.browsing_shop == false
     @Condition eventPlayer.is_using_ability[Talent.JUGGERNAUT] == false
     @Condition eventPlayer.is_using_ability[Talent.DIVE_BOMB] == false
-    @Condition eventPlayer.is_using_ability[Talent.IMMUNITY] == false
     @Condition eventPlayer.is_using_ability[Talent.GRIM_REAPER] == false
     #Using hearthstone
     @Condition eventPlayer.is_using_hearthstone == false
@@ -736,10 +734,11 @@ rule "TALENT SYSTEM - - - [TALENT 9: RAILGUN] Charge Railgun":
         recalculate_player_speed()
         waitUntil(not eventPlayer.isHoldingButton(Button.SECONDARY_FIRE) or eventPlayer.isDead() or eventPlayer.browsing_shop == true or eventPlayer.isUsingAbility1() or eventPlayer.isMeleeing() or eventPlayer.is_using_ability[Talent.RAILGUN] == true or eventPlayer.hasStatusEffect(Status.STUNNED) or eventPlayer.hasStatusEffect(Status.KNOCKED_DOWN) or eventPlayer.isReloading() or eventPlayer.is_hacked, 99999)
         eventPlayer.is_charging_railgun = false
-        eventPlayer.setPrimaryFireEnabled(true)
-        if eventPlayer.isHoldingButton(Button.PRIMARY_FIRE):
-            eventPlayer.startForcingButton(Button.PRIMARY_FIRE)
-            async(continue_primary_fire, AsyncBehavior.NOOP)
+        if not eventPlayer.is_using_ability[Talent.IMMUNITY]:
+            eventPlayer.setPrimaryFireEnabled(true)
+            if eventPlayer.isHoldingButton(Button.PRIMARY_FIRE):
+                eventPlayer.startForcingButton(Button.PRIMARY_FIRE)
+                async(continue_primary_fire, AsyncBehavior.NOOP)
         wait()
         #eventPlayer.setMoveSpeed(eventPlayer.stats[Stat.SPEED])
         stopChasingVariable(eventPlayer.railgun_charge)
@@ -1389,6 +1388,7 @@ def fireball_casted():
         wait(0.032)
 
         damage(eventPlayer.victims_in_fireball_radius[eventPlayer.fireball_loop], eventPlayer, FIREBALL_DAMAGE if eventPlayer.victims_in_fireball_radius[eventPlayer.fireball_loop] != eventPlayer else FIREBALL_DAMAGE_SELF if eventPlayer.talent_ranks[Talent.PYROMANIAC] == 0 else 0)
+        playEffect(getAllPlayers(), DynamicEffect.REINHARDT_FIRE_STRIKE_TARGET_IMPACT, Color.TEAM_2, eventPlayer.victims_in_fireball_radius[eventPlayer.fireball_loop], 1)
         eventPlayer.victims_in_fireball_radius[eventPlayer.fireball_loop].startDoT(eventPlayer, FIREBALL_DAMAGE_OVER_TIME_DURATION if eventPlayer.victims_in_fireball_radius[eventPlayer.fireball_loop] != eventPlayer else FIREBALL_DAMAGE_SELF_OVER_TIME_DURATION, FIREBALL_DAMAGE_OVER_TIME if eventPlayer.victims_in_fireball_radius[eventPlayer.fireball_loop] != eventPlayer else FIREBALL_DAMAGE_SELF_OVER_TIME if eventPlayer.talent_ranks[Talent.PYROMANIAC] == 0 else 0)
 
         #Set Status Burning

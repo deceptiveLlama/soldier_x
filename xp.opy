@@ -57,10 +57,10 @@ rule "XP SYSTEM - - - XP Orbs":
                     damage(player_picking_up_orb, xp_orbs[xp_orbs_current_index][Orb.OWNING_PLAYER], BURNING_SOUL_ORB_DAMAGE)
                 
                     xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] = false
-                    destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])    
+                    destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
                     destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
-                    playEffect(getAllPlayers(), DynamicEffect.DVA_MICRO_MISSILES_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
-                    playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_MINEFIELD_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
+                    playEffect(getAllPlayers(), DynamicEffect.JUNKRAT_FRAG_LAUNCHER_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
+                    playEffect(getAllPlayers(), DynamicEffect.JUNKRAT_FRAG_LAUNCHER_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
 
                 if player_picking_up_orb.talent_ranks[Talent.ALCHEMIST] > 0 and player_picking_up_orb.amount_of_health_potions < 3 and ALCHEMIST_PROC_CHANCE >= 66:
                     if player_picking_up_orb.is_hacked == true:
@@ -87,7 +87,7 @@ rule "XP SYSTEM - - - XP Orbs":
                         player_picking_up_orb.hack_error_pending = true
                     else:
                         player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] = player_picking_up_orb.talent_trigger_times[Talent.SHADOWSTEP] - player_picking_up_orb.talent_ranks[Talent.SHADOWSTEP] * 2
-                
+
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
                 del xp_orbs[xp_orbs_current_index]
@@ -98,11 +98,11 @@ rule "XP SYSTEM - - - XP Orbs":
             elif xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] == true and xp_orbs[xp_orbs_current_index][Orb.TIMESTAMP] < getTotalTimeElapsed() - BURNING_SOUL_ORB_DURATION:
                 #print("removed explosive property")
                 xp_orbs[xp_orbs_current_index][Orb.EXPLOSIVE] = false
-                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])    
+                destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_SOUND_EFFECT_ID])
                 destroyEffect(xp_orbs[xp_orbs_current_index][Orb.BURNING_SOUL_EFFECT_ID])
-                playEffect(getAllPlayers(), DynamicEffect.DVA_MICRO_MISSILES_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 1)
-                playEffect(getAllPlayers(), DynamicEffect.WRECKING_BALL_MINEFIELD_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
-                
+                playEffect(getAllPlayers(), DynamicEffect.JUNKRAT_FRAG_LAUNCHER_EXPLOSION, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION] + (Vector.DOWN * 0.25), 1)
+                playEffect(getAllPlayers(), DynamicEffect.JUNKRAT_FRAG_LAUNCHER_EXPLOSION_SOUND, Color.TEAM_2, xp_orbs[xp_orbs_current_index][Orb.POSITION], 100)
+
             wait(0.12 / len(xp_orbs))
         if RULE_CONDITION:
             goto RULE_START

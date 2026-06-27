@@ -86,10 +86,7 @@ enum Orb:
     ORB_EFFECT_ID,
     BURNING_SOUL_SOUND_EFFECT_ID,
     BURNING_SOUL_EFFECT_ID,
-    
 
-#globalvar xp_orb = [Orb.OWNING_PLAYER, Orb.TIMESTAMP, Orb.XP_AMOUNT, Orb.EXPLOSIVE, Orb.EXPLOSIVE_RANK, Orb.POSITION, Orb.COLOR, Orb.ORB_EFFECT_ID, Orb.BURNING_SOUL_SOUND_EFFECT_ID, Orb.BURNING_SOUL_EFFECT_ID]
-globalvar xp_orb = [null, null, null, null, null, null, null, null, null, null]
 globalvar xp_orbs = []
 
 
@@ -226,6 +223,10 @@ playervar current_dive_bomb_target = 0
 #!defineMember recent_damage_time_other variable[410]
 #!defineMember recent_damage_crit_other variable[412]
 
+#--- Discord XP-bar ad (variable[405-406]) ---
+#!defineMember engaged_since_spawn variable[405]
+#!defineMember discord_ad_message variable[406]
+
 #--- Shared global defineMember (global_variable[0-49]) ---
 
 #!defineMember highest_grim_reaper_rank_in_match global_variable[0]
@@ -262,6 +263,7 @@ subroutine cancel_shop_camera
 subroutine create_talent_helpers
 subroutine create_talent_hud_texts
 subroutine dropped_burning_soul_orb
+subroutine burning_soul_orb_sound_fade
 #subroutine dropped_xp_orb
 subroutine If_map
 /*subroutine juggernaut_effects
@@ -329,6 +331,14 @@ macro DAMAGE_NUMBER_HELIX_THRESHOLD = 120
 #Adrenaline Rush: Rank 1: 125% speed over 10s. Rank 5: 150% speed over 20s. Decays 2.5% per second.
 #macro ADRENALINE_RUSH_MAX_SPEED = 125 + (eventPlayer.talent_ranks[Talent.ADRENALINE_RUSH] - 1) * 6.25
 #macro ADRENALINE_RUSH_DECAY_RATE = 2.5
+
+#--- Discord XP-bar ad ---
+#!define DISCORD_AD_MESSAGES ["Join the Discord! — DSC.GG/Soldier-X", "Found a bug? — DSC.GG/Soldier-X", "Got feedback? — DSC.GG/Soldier-X", "Join the community! — DSC.GG/Soldier-X"]
+macro DISCORD_BRIGHTNESS_RANGE = 30
+macro DISCORD_FADE_T = 1 - abs(((current_time * 4) % 2) - 1)
+macro DISCORD_FADE_OFFSET = DISCORD_BRIGHTNESS_RANGE * (2 * DISCORD_FADE_T - 1)
+macro DISCORD_AD_COLOR = rgb(114 + DISCORD_FADE_OFFSET, 137 + DISCORD_FADE_OFFSET, 218 + DISCORD_FADE_OFFSET)
+macro DISCORD_AD_ACTIVE = eventPlayer.isAlive() and not eventPlayer.engaged_since_spawn and eventPlayer.amount_of_talents_purchased > 0 and eventPlayer.amount_of_talents_purchased < 25 and not eventPlayer.skipped_a_talent and not eventPlayer.can_enter_shop and not eventPlayer.xp_boost_is_active
 
 #--- Camera-basis vectors for in-world HUD texts anchored to localPlayer's view ---
 macro HUD_CAM_UP = angleToDirection(horizontalAngleOfDirection(localPlayer.getFacingDirection()), verticalAngleOfDirection(localPlayer.getFacingDirection()) - 90)
